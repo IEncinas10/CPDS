@@ -1,0 +1,22 @@
+erl -pa ebin -eval "application:start(myapp)"
+
+https://stackoverflow.com/questions/16302755/start-erlang-application-from-command-line
+
+Hacer esta mierda¿?
+
+sleep 10 & proc=$!; kill $proc
+
+FUNCIONA
+./a.out & proc=$!; sleep 10; kill $proc
+
+Normal:
+c(pers).
+c(paxy).
+
+etc...
+
+paxy:start([delay1, delay2, delay3]).
+
+x=200; y=200; z=300; erl -pa ebin -eval "paxy:start([$x, $y, $z])" > script_paxy.out & pid=$!; sleep 8; kill $pid
+
+mirar correcciones repo github
