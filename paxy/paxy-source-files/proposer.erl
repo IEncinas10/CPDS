@@ -90,6 +90,8 @@ collect(N, Round, MaxVoted, Proposal) ->
     {sorry, _} ->
       collect(N, Round, MaxVoted, Proposal)
   after ?timeout ->
+    io:format("[Proposer ~w] Timed out~n", 
+               [self()]),
     abort
   end.
 
@@ -107,6 +109,8 @@ vote(N, Round) ->
     {sorry, _} ->
       vote(N, Round) % Rejected from other round or from the promise
   after ?timeout ->
+    io:format("[Proposer ~w] Timed out~n", 
+               [self()]),
     abort
   end.
 
