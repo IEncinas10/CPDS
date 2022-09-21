@@ -25,8 +25,8 @@ start(Sleep) ->
         wait_proposers(length(PropIds)),
         End = erlang:monotonic_time(),
         Elapsed = erlang:convert_time_unit(End-Begin, native, millisecond),
-        io:format("[Paxy] Total elapsed time: ~w ms~n", [Elapsed])%,
-	%stop()
+        io:format("[Paxy] Total elapsed time: ~w :ms~n", [Elapsed]),
+	stop()
 	% Esto da error pero acaba bien...
       end)
   end.
