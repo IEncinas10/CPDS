@@ -91,58 +91,46 @@ Paxos is extensively used in production systems, so getting practical experience
     If we're not able to get our Proposal accepted we'll try again with a higher Round number after backing off for a while in order to facilitate consensus.
   
 
-\begin{lstlisting}[language=erlang]
-  
-ballot(Name, Round, Proposal, Acceptors, PanelId) ->
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Template}]
+	
   prepare(..., ...),
   Quorum = (length(...) div 2) + 1,
   MaxVoted = order:null(),
   case collect(..., ..., ..., ...) of
     {accepted, Value} ->
-      io:format("[Proposer ~w] Phase 2: round ~w proposal ~w (was ~w)~n", 
-                 [Name, Round, Value, Proposal]),
-      % update gui
-      PanelId ! {updateProp, "Round: " ++ io_lib:format("~p", [Round]), Value},
       accept(..., ..., ...),
       case vote(..., ...) of
         ok ->
           {ok, ...};
         abort ->
           abort
-      end;
-    abort ->
-      abort
-  end.
-\end{lstlisting}
-
-\begin{lstlisting}
-  
-ballot(Name, Round, Proposal, Acceptors, PanelId) ->
-  % Send prepare message with round information
+  \end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Filled version}]
+	
   prepare(Round, Acceptors),
-  % Necessary votes
   Quorum = (length(Acceptors) div 2) + 1,
   MaxVoted = order:null(),
-  % Quorum vamos haciendole -1 hasta llegar a 0
   case collect(Quorum, Round, MaxVoted, Proposal) of
     {accepted, Value} ->
-      io:format("[Proposer ~w] Phase 2: round ~w proposal ~w (was ~w)~n", 
-                 [Name, Round, Value, Proposal]),
-      % update gui
-      PanelId ! {updateProp, "Round: " ++ io_lib:format("~p", [Round]), Value},
-      % We got promised, lets ask for votes
       accept(Round, Value, Acceptors),
       case vote(Quorum, Round) of
         ok ->
           {ok, Value};
         abort ->
           abort
-      end;
-    abort ->
-      abort
-\end{lstlisting}
+	\end{lstlisting}
+    \end{minipage}
 
-For the \textit{ballot} function we need to add \textit{Round and Acceptors} as parameters for the \textit{prepare} function. With this function we send the prepare message with the round information. In the next step, we need is calculate the necessary votes, which are calculated as the number of Acceptors divided by 2, plus 1. The parameters of \textit{collect} function must be \textit{Quorum, Round, MaxVoted, Proposal}. In case of this function returns an accept we call the \textit{accept} function with \textit{Round, Value, Acceptors} values as parameters. Following that function, we call \textit{vote} fuction inside of a case statement, in case we recieve an ok we return \textit{\{ok, Value\}}.
+  For the \textit{ballot} function we need to add \textit{Round and Acceptors} as parameters for the \textit{prepare} function. With this function we send the prepare message with the Round information to the list of Accpeptors. 
+
+  In the next step, we need is calculate the necessary votes to achieve consensus, which is calculated as the number of Acceptors divided by 2, plus 1.
+
+  The parameters of \textit{collect} function must be Quorum in order to know if we achieve the consensus, and Round, MaxVoted and Proposal. In case of this function returns an accepted (also called \textit{promise} on the diagram) we call the \textit{accept} function with \textit{Round, Value, Acceptors} values as parameters to send the accept message. 
+
+  Following that function, we call \textit{vote} fuction inside of a case statement with the Quorum and the Round, in case we recieve an ok the function will return \textit{\{ok, Value\}}.
 
 \begin{lstlisting}
   
