@@ -50,7 +50,6 @@
 
 The Paxy seminar consists in understanding the Paxos protocol through an Erlang implementation. First, we will develop a basic understanding of the underlying algorithm when filling the gaps in the template implementation. Later on we will build on this understanding and see the effects of different modifications such as introducing message delays, message drops, removing sorry messages and so on. Some of these modifications are specially important because they are responsible for making it impossible to guarantee a consensus in an asynchronous system.
 
-
 Paxos is extensively used in production systems, so getting practical experience with it and examining how it behaves under different circumstances will prove very useful.
 
 %\textit{Introduce in a couple of sentences the seminar and the main topic related to distributed systems it covers.}
@@ -239,8 +238,35 @@ In the \textit{\{vote\}} function we expect to recieve a vote or sorry message f
 
 
 \section{Experiments}
-
 \textit{Provide evidence of the experiments you did (e.g., use screenshots) and discuss the results you got. In addition, you may provide figures or tables with experimental results of the system evaluation. For each seminar, we will provide you with some guidance on which kind of evaluation you should do.}
+
+\subsection{Introducing delays in the promise and vote messages}
+
+\subsubsection{Does the algorithm still terminate? Does it require more rounds? How does the impact of the message delays depend on the value of the timout at the proposer?}
+
+\subsection{Avoid sending sorry messages}
+
+\subsubsection{Could you come to an agreement when sorry messages are not sent?}
+
+\subsection{Try randomly dropping promise and vote messages in the acceptor}
+
+\subsubsection{How does the drop ratio affect the number of rounds required to reach consensus?}
+
+\subsection{Try increasing the number of acceptors and proposers}
+
+\subsubsection{What is the impact of having more acceptors while keeping the number of proposers?}
+
+\subsection{Adapt the paxy module to create the proposers and acceptors in a remote Erlang instance}
+
+
+
+\section{Fault tolerance}
+
+\subsection{Experiments}
+
+\section{Improvement based on sorry messages}
+
+\subsection{Experiments}
 
 \section{Open questions}
 
