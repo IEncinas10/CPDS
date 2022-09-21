@@ -4,6 +4,8 @@
 \usepackage{graphicx}
 \usepackage{url}
 
+\usepackage{float}
+\usepackage{amsmath}
 \usepackage{xcolor}
 \usepackage{todonotes}
 
@@ -246,7 +248,28 @@ vote(N, Round) ->
 
 \subsection{Introducing delays in the promise and vote messages}
 
-\subsubsection{Does the algorithm still terminate? Does it require more rounds? How does the impact of the message delays depend on the value of the timout at the proposer?}
+We have tried adding delay both to the promise and vote messages. The expected result is 
+that adding delay will increase the time needed to reach consensus. As we're dealing with
+random delays there is a noticeable oscillation and the runtime increase is highly volatile.
+
+
+The increase in runtime is important but relatively controlled for small delays when compared
+to the proposer timeout. The problem arises once our delay becomes so big that we start 
+timing out in our proposers and we can't get work done, thus our algorithm starts taking too
+much time. It is possible that it eventually achieves consensus but further examination 
+is not feasable, and it wouldn't really matter as we need a somewhat reliable algorithm. 
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\linewidth]{plots/exp1_timeout2000.pdf}
+    \caption{Results with $\text{proposer timeout}=2000$}
+\end{figure}
+
+The number of rounds is 2 or less for almost every delay. It only increases along with the runtime spikes we see starting at $delay=2800$, where the decision starts taking 6, 9 and up to 10 rounds.
+
+%\subsubsection{Does the algorithm still terminate? Does it require more rounds? How does the impact of the message delays depend on the value of the timout at the proposer?}
+
 
 \subsection{Avoid sending sorry messages}
 

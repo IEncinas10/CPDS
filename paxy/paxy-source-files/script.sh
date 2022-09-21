@@ -25,9 +25,9 @@ for i in "${sleep_p1[@]}"; do
 		export delay=$d; erl -noshell -pa ebin -eval "paxy:start([$i, $j, $k])" > exp1/$filename & pid=$!; sleep 35; kill $pid
 
 		result=$(grep "Total" exp1/$filename | awk -F '[:]' '{print $2}')
-		if [ -n "$result" ]; then
-		    result=35000
-		fi
+		#if [ -n "$result" ]; then
+		    #result=35000
+		#fi
 		echo $d, $result >> exp1/clean
 		#awk -F'[:]' '{print $2}' paxy200_200_200_50.out
 
