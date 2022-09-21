@@ -9,9 +9,10 @@
 
 % doesnt work, dont know why..
 getdelay() -> 
-    case os:getenv("delay") of
-	false -> delay;
-	value -> value
+    Val = os:getenv("delay"),
+    case Val of
+	false -> ?delay;
+	_ -> N = list_to_integer(Val), io:format("N = ~w~n", [N]), N 
     end.
 
 start(Name, PanelId) ->
@@ -32,7 +33,7 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
           %Proposer ! {promise, Round, Voted, Value},               
 	  %Experiment 2.i) 
           Message = {promise, Round, Voted, Value},
-	  T = rand:uniform(?delay),
+	  T = rand:uniform(getdelay()),
 	  timer:send_after(T, Proposer, Message),
 	  %Experiment 2.i)
 
@@ -52,7 +53,7 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
           %Proposer ! {sorry, {prepare, Round}},
 	  %Experiment 2.i) 
           Message = {sorry, {prepare, Round}},
-	  T = rand:uniform(?delay),
+	  T = rand:uniform(getdelay()),
 	  timer:send_after(T, Proposer, Message),
 	  %Experiment 2.i)
 	  
@@ -65,7 +66,7 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
           %Proposer ! {vote, Round},
 	  %Experiment 2.i) 
           Message = {vote, Round},
-	  T = rand:uniform(?delay),
+	  T = rand:uniform(getdelay()),
 	  timer:send_after(T, Proposer, Message),
 	  %Experiment 2.i)
 
@@ -90,7 +91,7 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
 	  
 	  %Experiment 2.i) 
           Message = {sorry, {accept, Round}},
-	  T = rand:uniform(?delay),
+	  T = rand:uniform(getdelay()),
 	  timer:send_after(T, Proposer, Message),
 	  %Experiment 2.i)
 	  

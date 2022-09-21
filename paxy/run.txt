@@ -17,3 +17,6 @@ mirar correcciones repo github
 
 [OK, tiene correcciones etc] https://github.com/SergioMD15/CPDS-MIRI
 [Sin revisar] https://github.com/eudaldsabate/MIRI-CPDS/tree/master/distributed_systems/1_seminar_paxy
+
+
+export delay=4; x=200; y=200; z=300; erl -pa ebin -eval "paxy:start([$x, $y, $z])" > script_paxy.out & pid=$!; sleep 8; kill $pid
