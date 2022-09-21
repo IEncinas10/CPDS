@@ -21,6 +21,7 @@ start(Name, PanelId) ->
 init(Name, PanelId) ->
   Promised = order:null(), 
   Voted = order:null(),
+  rand:seed(exs1024s, {123, 123534, 345345}),
   Value = na,
   acceptor(Name, Promised, Voted, Value, PanelId).
 
