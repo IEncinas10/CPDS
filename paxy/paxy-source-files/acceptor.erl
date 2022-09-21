@@ -1,6 +1,19 @@
 -module(acceptor).
 -export([start/2]).
 
+-define(delay, 200).
+
+%T = rand:uniform(getdelay()),
+%timer:send_after(T, Pid, Message),
+
+
+% doesnt work, dont know why..
+getdelay() -> 
+    case os:getenv("delay") of
+	false -> delay;
+	value -> value
+    end.
+
 start(Name, PanelId) ->
   spawn(fun() -> init(Name, PanelId) end).
         
@@ -16,7 +29,12 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
       case order:gr(Round, Promised) of
 	  % Send promise with our {Round(new), Voted(old), Value(old)} state 
         true ->
-          Proposer ! {promise, Round, Voted, Value},               
+          %Proposer ! {promise, Round, Voted, Value},               
+	  %Experiment 2.i) 
+          Message = {promise, Round, Voted, Value},
+	  T = rand:uniform(?delay),
+	  timer:send_after(T, Proposer, Message),
+	  %Experiment 2.i)
 
 	  % We promised Round, we still have voted Voted
       io:format("[Acceptor ~w] Phase 1: promised ~w voted ~w colour ~w~n",
@@ -31,14 +49,26 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
 
 	  % If Promised > Round we send sorry message specifying which round we're refusing 
         false ->
-          Proposer ! {sorry, {prepare, Round}},
+          %Proposer ! {sorry, {prepare, Round}},
+	  %Experiment 2.i) 
+          Message = {sorry, {prepare, Round}},
+	  T = rand:uniform(?delay),
+	  timer:send_after(T, Proposer, Message),
+	  %Experiment 2.i)
+	  
           acceptor(Name, Promised, Voted, Value, PanelId)
       end;
     {accept, Proposer, Round, Proposal} ->
 	  % If Round >= Promised we vote for the proposal
       case order:goe(Round, Promised) of
         true ->
-          Proposer ! {vote, Round},
+          %Proposer ! {vote, Round},
+	  %Experiment 2.i) 
+          Message = {vote, Round},
+	  T = rand:uniform(?delay),
+	  timer:send_after(T, Proposer, Message),
+	  %Experiment 2.i)
+
 	  % If Round >= Voted we update the highest numbered proposal
           case order:goe(Round, Voted) of
             true ->
@@ -56,7 +86,14 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
 	  %TODO check Round/Voted
 	  %Both work but Round is the correct one! 
 	  %works because of the {sorry, _}
-          Proposer ! {sorry, {accept, Round}},
+          %Proposer ! {sorry, {accept, Round}},
+	  
+	  %Experiment 2.i) 
+          Message = {sorry, {accept, Round}},
+	  T = rand:uniform(?delay),
+	  timer:send_after(T, Proposer, Message),
+	  %Experiment 2.i)
+	  
           acceptor(Name, Promised, Voted, Value, PanelId)
       end;
     stop ->
