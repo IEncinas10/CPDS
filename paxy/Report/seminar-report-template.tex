@@ -124,7 +124,7 @@ Paxos is extensively used in production systems, so getting practical experience
 	\end{lstlisting}
     \end{minipage}
 
-  For the \textit{ballot} function we need to add \textit{Round and Acceptors} as parameters for the \textit{prepare} function. With this function we send the prepare message with the Round information to the list of Accpeptors. 
+  For the \textbf{ballot} function we need to add \textit{Round and Acceptors} as parameters for the \textit{prepare} function. With this function we send the prepare message with the Round information to the list of Accpeptors. 
 
   In the next step, we need is calculate the necessary votes to achieve consensus, which is calculated as the number of Acceptors divided by 2, plus 1.
 
@@ -227,7 +227,7 @@ vote(N, Round) ->
 	\end{lstlisting}
     \end{minipage}
 
-  In the \textit{vote} function we expect to recieve a vote or sorry message from the Acceptors. In this function we define the behavior depending what we receive. 
+  In the \textbf{vote} function we expect to recieve a vote or sorry message from the Acceptors. In this function we define the behavior depending what we receive: 
   
   \begin{itemize}
     \item In case of receive a vote like \textit{\{vote, Round\}}, we subsctact 1 to the votes necessary for consensus (\textit{N}) to the next vote function with the same Round. 
