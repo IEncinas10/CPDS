@@ -132,8 +132,10 @@ Paxos is extensively used in production systems, so getting practical experience
 
   Following that function, we call \textit{vote} fuction inside of a case statement with the Quorum and the Round, in case we recieve an ok the function will return \textit{\{ok, Value\}}.
 
-\begin{lstlisting}
-  
+
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Template}]
+	
 collect(N, Round, MaxVoted, Proposal) ->
   receive 
     {promise, Round, _, na} ->
@@ -154,42 +156,40 @@ collect(N, Round, MaxVoted, Proposal) ->
   after ?timeout ->
     abort
   end.
-\end{lstlisting}
-
-\begin{lstlisting}
-
+  \end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Filled version}]
+	
 collect(N, Round, MaxVoted, Proposal) ->
   receive 
-    % Promise received, no previous votes. Keep collecting 'support'
     {promise, Round, _, na} ->
       collect(N-1, Round, MaxVoted, Proposal);
     {promise, Round, Voted, Value} ->
-      % We got the promise. Update the maximum Voted/Proposal
       case order:gr(Voted, MaxVoted) of
-	% Learn value
         true ->
           collect(N-1, Round, Voted, Value);
-	% Keep this proposal
         false ->
           collect(N-1, Round, MaxVoted, Proposal)
       end;
-    % TODO: Old message, ignore and keep going?
     {promise, _, _,  _} ->
       collect(N, Round, MaxVoted, Proposal);
-    % Rejected, just keep gathering support
     {sorry, {prepare, Round}} ->
       collect(N, Round, MaxVoted, Proposal);
-    % TODO: Old message from message or whatever?
     {sorry, _} ->
       collect(N, Round, MaxVoted, Proposal)
   after ?timeout ->
     abort
-\end{lstlisting}
+  end.
+	\end{lstlisting}
+    \end{minipage}
 
 \todo[inline]{Terminar cuando TODO esté hecho}
 
-\begin{lstlisting}
-  
+
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Template}]
+	
 vote(N, Round) ->
   receive
     {vote, Round} ->
@@ -203,26 +203,37 @@ vote(N, Round) ->
   after ?timeout ->
     abort
   end.
-\end{lstlisting}
-
-\begin{lstlisting}
-
+  \end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Filled version}]
+	
 vote(N, Round) ->
   receive
     {vote, Round} ->
-      vote(N-1, Round); % voto ganado, uno menos
-    {vote, _} -> % voto desactualizado?
+      vote(N-1, Round);
+    {vote, _} ->
       vote(N, Round);
     {sorry, {accept, Round}} ->
-      vote(N, Round); % Rejected, keep going
+      vote(N, Round);
     {sorry, _} ->
-      vote(N, Round) % Rejected from other round or from the promise
+      vote(N, Round)
   after ?timeout ->
     abort
   end.
-\end{lstlisting}
+	\end{lstlisting}
+    \end{minipage}
 
-In the \textit{\{vote\}} function we expect to recieve a vote or sorry message from the Acceptors. In this function we define the behavior depending what we receive. In case of receive a vote like \textit{\{vote, Round\}}, we subsctact 1 to the vote necessary for consensus. If we receive \textit{\{sorry, \{accept, Round\}\}} that means that the vote was rejected and we keep trying, so we do not substract nothing to the number of votes remaining for achieve consensus.
+  In the \textit{vote} function we expect to recieve a vote or sorry message from the Acceptors. In this function we define the behavior depending what we receive. 
+  
+  \begin{itemize}
+    \item In case of receive a vote like \textit{\{vote, Round\}}, we subsctact 1 to the votes necessary for consensus (\textit{N}) to the next vote function with the same Round. 
+
+    \item If we receive \textit{\{sorry, \{accept, Round\}\}} that means that the vote was rejected and we keep trying, so we do not substract nothing to the number of votes remaining for achieve consensus on the next vote function, passing N and Round again as parameters.
+  \end{itemize}
+    
+    
+
 
 
 \section{Experiments}
