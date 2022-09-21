@@ -128,7 +128,7 @@ Paxos is extensively used in production systems, so getting practical experience
 
   In the next step, we need is calculate the necessary votes to achieve consensus, which is calculated as the number of Acceptors divided by 2, plus 1.
 
-  The parameters of \textit{collect} function must be Quorum in order to know if we achieve the consensus, and Round, MaxVoted and Proposal. In case of this function returns an accepted (also called \textit{promise} on the diagram) we call the \textit{accept} function with \textit{Round, Value, Acceptors} values as parameters to send the accept message. 
+  The parameters of \textit{collect} function must be Quorum in order to know if we achieve the consensus, and Round, MaxVoted to know the maximum Round the Acceptor has promised and Proposal. In case of this function returns an accepted (also called \textit{promise} on the diagram) we call the \textit{accept} function with \textit{Round, Value, Acceptors} values as parameters to send the accept message. 
 
   Following that function, we call \textit{vote} fuction inside of a case statement with the Quorum and the Round, in case we recieve an ok the function will return \textit{\{ok, Value\}}.
 
@@ -153,9 +153,6 @@ collect(N, Round, MaxVoted, Proposal) ->
       collect(..., ..., ..., ...);
     {sorry, _} ->
       collect(N, Round, MaxVoted, Proposal)
-  after ?timeout ->
-    abort
-  end.
   \end{lstlisting}
     \end{minipage}\hfill
     \begin{minipage}{.45\textwidth}
@@ -178,13 +175,19 @@ collect(N, Round, MaxVoted, Proposal) ->
       collect(N, Round, MaxVoted, Proposal);
     {sorry, _} ->
       collect(N, Round, MaxVoted, Proposal)
-  after ?timeout ->
-    abort
-  end.
 	\end{lstlisting}
     \end{minipage}
 
-\todo[inline]{Terminar cuando TODO esté hecho}
+\todo[inline]{Terminar cuando TODO esté hecho. Preguntar al profesor en clase}
+
+For the \textbf{collect} function, we expect to receive the reply from the acceptor to our accept. Depending on the message received our function will do:
+
+\begin{itemize}
+  \item If the message is \textit{\{promise, Round, \_, na\}}, we do recursion substracting 1 to N. Keep collecting 'support' after getting one promise.
+  \item If the message is \textit{\{promise, Round, Voted, Value\}}, we are getting the promise but we need to update the maximum Voted/Proposal. That is what we do in the next case statement. We use the maximum between voted and MaxVoted for the recursion.
+  \item If the message is \textit{\{sorry, \{prepare, Round\}\}}, we keep trying to get support of other Acceptors.
+\end{itemize}
+
 
 
     \begin{minipage}{.45\textwidth}
