@@ -1,0 +1,253 @@
+\documentclass[a4paper, 10pt]{article}
+\usepackage[utf8]{inputenc} % Change according your file encoding
+\usepackage{graphicx}
+\usepackage{url}
+
+\usepackage{xcolor}
+\usepackage{todonotes}
+\usepackage{listings}
+
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},  
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single
+}
+
+\lstset{style=mystyle}
+
+%opening
+\title{Seminar Report: [seminar ID] (e.g. Paxy)}
+\author{\textbf{Name of team members}}
+\date{\normalsize\today{}}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+  Upload your report in PDF format.
+  
+  Use this LaTeX template to format the report.
+  
+	A compressed file (.tar.gz) containing all your source code files must be submitted together with this report.
+\end{center}
+
+\section{Introduction}
+
+\textit{Introduce in a couple of sentences the seminar and the main topic related to distributed systems it covers.}
+
+\section{Code modifications}
+
+  In this section we are going to show the code introduced in order to make the algorithm work.
+
+  \subsection{Proposer.erl}
+
+    \begin{lstlisting}[language=erlang]
+      %Provided code
+      
+      round(Name, Backoff, Round, Proposal, Acceptors, PanelId) ->
+      io:format("[Proposer ~w] Phase 1: round ~w proposal ~w~n", 
+                  [Name, Round, Proposal]),
+      PanelId ! {updateProp, "Round: " ++ io_lib:format("~p", [Round]), Proposal},
+      case ballot(Name, ..., ..., ..., PanelId) of  
+      {ok, Value} ->
+        {Value, Round};
+      abort ->
+        timer:sleep(rand:uniform(Backoff)),
+        Next = order:inc(...),
+        round(Name, (2*Backoff), ..., Proposal, Acceptors, PanelId)
+
+---------------------------------------------------------
+      %Changed code 
+      
+      round(Name, Backoff, Round, Proposal, Acceptors, PanelId) ->
+      io:format("[Proposer ~w] Phase 1: round ~w proposal ~w~n", 
+                [Name, Round, Proposal]),
+      PanelId ! {updateProp, "Round: " ++ io_lib:format("~p", [Round]), Proposal},
+      case ballot(Name, Round, Proposal, Acceptors, PanelId) of
+
+      %Consensus, return {Value, Round}
+      {ok, Value} ->
+        {Value, Round};
+      abort ->
+        timer:sleep(rand:uniform(Backoff)),
+        % Try again after sleeping, increment round and sleeptime
+        Next = order:inc(Round),
+        round(Name, (2*Backoff), Next, Proposal, Acceptors, PanelId)
+      end.
+    \end{lstlisting}
+
+
+  In this part of the code, we can see what we have introduced to make \textit{round} function work. The first change are the parameters added to the case statement, which are the \textit{Round, proposal and acceptors}. The next modification is in case we recieve an \textit{abort}. As observed above, \textit{Next} variable is defined as the increment of \textit{Round} and we use this new incremented variable as \textit{Round} in the recursion calling \textit{round} function. 
+ 
+
+\begin{lstlisting}[language=erlang]
+  
+ballot(Name, Round, Proposal, Acceptors, PanelId) ->
+  prepare(..., ...),
+  Quorum = (length(...) div 2) + 1,
+  MaxVoted = order:null(),
+  case collect(..., ..., ..., ...) of
+    {accepted, Value} ->
+      io:format("[Proposer ~w] Phase 2: round ~w proposal ~w (was ~w)~n", 
+                 [Name, Round, Value, Proposal]),
+      % update gui
+      PanelId ! {updateProp, "Round: " ++ io_lib:format("~p", [Round]), Value},
+      accept(..., ..., ...),
+      case vote(..., ...) of
+        ok ->
+          {ok, ...};
+        abort ->
+          abort
+      end;
+    abort ->
+      abort
+  end.
+\end{lstlisting}
+
+\begin{lstlisting}
+  
+ballot(Name, Round, Proposal, Acceptors, PanelId) ->
+  % Send prepare message with round information
+  prepare(Round, Acceptors),
+  % Necessary votes
+  Quorum = (length(Acceptors) div 2) + 1,
+  MaxVoted = order:null(),
+  % Quorum vamos haciendole -1 hasta llegar a 0
+  case collect(Quorum, Round, MaxVoted, Proposal) of
+    {accepted, Value} ->
+      io:format("[Proposer ~w] Phase 2: round ~w proposal ~w (was ~w)~n", 
+                 [Name, Round, Value, Proposal]),
+      % update gui
+      PanelId ! {updateProp, "Round: " ++ io_lib:format("~p", [Round]), Value},
+      % We got promised, lets ask for votes
+      accept(Round, Value, Acceptors),
+      case vote(Quorum, Round) of
+        ok ->
+          {ok, Value};
+        abort ->
+          abort
+      end;
+    abort ->
+      abort
+\end{lstlisting}
+
+For the \textit{ballot} function we need to add \textit{Round and Acceptors} as parameters for the \textit{prepare} function. With this function we send the prepare message with the round information. In the next step, we need is calculate the necessary votes, which are calculated as the number of Acceptors divided by 2, plus 1. The parameters of \textit{collect} function must be \textit{Quorum, Round, MaxVoted, Proposal}. In case of this function returns an accept we call the \textit{accept} function with \textit{Round, Value, Acceptors} values as parameters. Following that function, we call \textit{vote} fuction inside of a case statement, in case we recieve an ok we return \textit{\{ok, Value\}}.
+
+\begin{lstlisting}
+  
+collect(N, Round, MaxVoted, Proposal) ->
+  receive 
+    {promise, Round, _, na} ->
+      collect(..., ..., ..., ...);
+    {promise, Round, Voted, Value} ->
+      case order:gr(..., ...) of
+        true ->
+          collect(..., ..., ..., ...);
+        false ->
+          collect(..., ..., ..., ...)
+      end;
+    {promise, _, _,  _} ->
+      collect(N, Round, MaxVoted, Proposal);
+    {sorry, {prepare, Round}} ->
+      collect(..., ..., ..., ...);
+    {sorry, _} ->
+      collect(N, Round, MaxVoted, Proposal)
+  after ?timeout ->
+    abort
+  end.
+\end{lstlisting}
+
+\begin{lstlisting}
+
+collect(N, Round, MaxVoted, Proposal) ->
+  receive 
+    % Promise received, no previous votes. Keep collecting 'support'
+    {promise, Round, _, na} ->
+      collect(N-1, Round, MaxVoted, Proposal);
+    {promise, Round, Voted, Value} ->
+      % We got the promise. Update the maximum Voted/Proposal
+      case order:gr(Voted, MaxVoted) of
+	% Learn value
+        true ->
+          collect(N-1, Round, Voted, Value);
+	% Keep this proposal
+        false ->
+          collect(N-1, Round, MaxVoted, Proposal)
+      end;
+    % TODO: Old message, ignore and keep going?
+    {promise, _, _,  _} ->
+      collect(N, Round, MaxVoted, Proposal);
+    % Rejected, just keep gathering support
+    {sorry, {prepare, Round}} ->
+      collect(N, Round, MaxVoted, Proposal);
+    % TODO: Old message from message or whatever?
+    {sorry, _} ->
+      collect(N, Round, MaxVoted, Proposal)
+  after ?timeout ->
+    abort
+\end{lstlisting}
+
+\todo[inline]{Terminar cuando TODO esté hecho}
+
+\begin{lstlisting}
+  
+vote(N, Round) ->
+  receive
+    {vote, Round} ->
+      vote(..., ...);
+    {vote, _} ->
+      vote(N, Round);
+    {sorry, {accept, Round}} ->
+      vote(..., ...);
+    {sorry, _} ->
+      vote(N, Round)
+  after ?timeout ->
+    abort
+  end.
+\end{lstlisting}
+
+\begin{lstlisting}
+
+vote(N, Round) ->
+  receive
+    {vote, Round} ->
+      vote(N-1, Round); % voto ganado, uno menos
+    {vote, _} -> % voto desactualizado?
+      vote(N, Round);
+    {sorry, {accept, Round}} ->
+      vote(N, Round); % Rejected, keep going
+    {sorry, _} ->
+      vote(N, Round) % Rejected from other round or from the promise
+  after ?timeout ->
+    abort
+  end.
+\end{lstlisting}
+
+In the \textit{\{vote\}} function we expect to recieve a vote or sorry message from the Acceptors. In this function we define the behavior depending what we receive. In case of receive a vote like \textit{\{vote, Round\}}, we subsctact 1 to the vote necessary for consensus. If we receive \textit{\{sorry, \{accept, Round\}\}} that means that the vote was rejected and we keep trying, so we do not substract nothing to the number of votes remaining for achieve consensus.
+
+
+\section{Experiments}
+
+\textit{Provide evidence of the experiments you did (e.g., use screenshots) and discuss the results you got. In addition, you may provide figures or tables with experimental results of the system evaluation. For each seminar, we will provide you with some guidance on which kind of evaluation you should do.}
+
+\section{Open questions}
+
+\textit{Try to answer all the open questions in the documentation. When possible, do experiments to support your answers.}
+
+\section{Personal opinion}
+
+\textit{Provide your personal opinion of the seminar, indicating whether it should be included in next year's course or not.}
+
+\end{document}
