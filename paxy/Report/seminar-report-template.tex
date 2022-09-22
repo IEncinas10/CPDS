@@ -2,6 +2,7 @@
 \usepackage[a4paper, total={5.5in, 8in}]{geometry}
 \usepackage[utf8]{inputenc} % Change according your file encoding
 \usepackage{graphicx}
+%\usepackage[demo]{graphicx}
 \usepackage{url}
 
 \usepackage{float}
@@ -332,6 +333,7 @@ The second type of message acceptor can receive is \textit{accept} message. In t
 We have tried adding delay both to the promise and vote messages. The expected result is 
 that adding delay will increase the time needed to reach consensus. As we're dealing with
 random delays there is a noticeable oscillation and the runtime increase is highly volatile.
+We use the same random seed for every experiment, trying to reduce the effects of pseudo-random numbers.
 
 
 The increase in runtime is important but relatively controlled for small delays when compared
@@ -343,11 +345,19 @@ is not feasable, and it wouldn't really matter as we need a somewhat reliable al
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.7\linewidth]{plots/exp1_timeout2000.pdf}
+  \includegraphics[width=\linewidth]{plots/exp1_timeout2000.pdf}
     \caption{Results with $\text{proposer timeout}=2000$}
 \end{figure}
 
 The number of rounds is 2 or less for almost every delay. It only increases along with the runtime spikes we see starting at $delay=2800$, where the decision starts taking 6, 9 and up to 10 rounds.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{plots/roundsexp1.pdf}
+    %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
+    \caption{Rounds needed to reach consensus w.r.t the delay\protect\footnotemark \   $\text{proposer timeout}=2000$}
+\end{figure} 
+
+\footnotetext{Actually, with respect to the mean value of the gaussian distribution it follows}
 
 %\subsubsection{Does the algorithm still terminate? Does it require more rounds? How does the impact of the message delays depend on the value of the timout at the proposer?}
 
