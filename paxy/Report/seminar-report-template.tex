@@ -242,6 +242,87 @@ vote(N, Round) ->
 \subsection{Acceptor.erl}
 
 
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Template}]
+  receive
+    {prepare, Proposer, Round} ->
+      case order:gr(..., ...) of
+        true ->
+          ... ! {promise, ..., ..., ...},               
+          acceptor(Name, ..., Voted, Value, PanelId);
+        false ->
+          ... ! {sorry, {prepare, ...}},
+          acceptor(Name, ..., Voted, Value, PanelId)
+      end;
+	\end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Filled version}]
+  receive
+    {prepare, Proposer, Round} ->
+      case order:gr(Round, Promised) of
+        true ->
+          Proposer ! {promise, Round, Voted, Value},               
+          acceptor(Name, Round, Voted, Value, PanelId);
+        false ->
+          Proposer ! {sorry, {prepare, Round}},
+          acceptor(Name, Promised, Voted, Value, PanelId)
+      end;
+	\end{lstlisting}
+    \end{minipage}
+
+    The Acceptor code only has \textbf{acceptor} function to fullfil. With this function we specify the desided behavior of Acceptors. The program receives the messages of the proposers. 
+
+    In case we receive a prepare message, we compare the Round that comes inside the message with our highest promised. 
+  \begin{itemize}
+    \item If the Round variable is higher we send a \textit{promise} message with the new Round, the previous \textit{Voted} round and \textit{value}. Then we update our Promised value with the Round. 
+    \item Else if the value recieved in Round is lower, we send a \textit{sorry} message to the acceptor with the Round we are refusing.
+  \end{itemize}
+
+
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Template}]
+    {accept, Proposer, Round, Proposal} ->
+      case order:goe(..., ...) of
+        true ->
+          ... ! {vote, ...},
+          case order:goe(..., ...) of
+            true ->
+              acceptor(Name, Promised, ..., ..., PanelId);
+            false ->
+              acceptor(Name, Promised, ..., ..., PanelId)
+          end;                            
+        false ->
+          ... ! {sorry, {accept, ...}},
+          acceptor(Name, Promised, Voted, Value, PanelId)
+	\end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Filled version}]
+
+    {accept, Proposer, Round, Proposal} ->
+      case order:goe(Round, Promised) of
+        true ->
+          Proposer ! {vote, Round},
+          case order:goe(Round, Voted) of
+            true ->
+              acceptor(Name, Promised, Round, Proposal, PanelId);
+            false ->
+              acceptor(Name, Promised, Round, Voted, PanelId)
+          end;                            
+        false ->
+          Proposer ! {sorry, {accept, Round}},
+          acceptor(Name, Promised, Voted, Value, PanelId)
+      end;
+  \end{lstlisting}
+    \end{minipage}
+
+The second type of message acceptor can receive is \textit{accept} message. In this case, we need to compare the \textit{Round} of the message with our \textit{Promised} value.
+
+\begin{itemize}
+  \item If the \textit{Round} is bigger or equal to the \textit{Promised}, we vote for the \textit{Proposal}. Then, in case the \textit{Round} is bigger or equal to \textit{Voted}, we update the highest numbered proposal, passing \textit{Round} value as \textit{Voted}. Else if it is lower, we update the the \textit{Voted} and \textit{Value} with \textit{Round} and \textit{Proposal}.
+  \item If the \textit{Round} is lower than the \textit{Promised}, we send a \textit{sorry} message with the \textit{Round} value we are refusing.
+\end{itemize}
 
 \section{Experiments}
 \textit{Provide evidence of the experiments you did (e.g., use screenshots) and discuss the results you got. In addition, you may provide figures or tables with experimental results of the system evaluation. For each seminar, we will provide you with some guidance on which kind of evaluation you should do.}
