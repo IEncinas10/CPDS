@@ -10,9 +10,15 @@ sleep_p3=(200)
 
 #acceptor_delays=(50 100 150 200 250 300 350 400 450 500 550 600 650 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400)
 #acceptor_delays=(1600 1800 2000 2200 2400 2600 2800 3000)
-acceptor_delays=(2600 2800 3000 3500 4000 4500 5000 5500)
+#acceptor_delays=(2600 2800 3000 3500 4000 4500 5000 5500)
+
+#acceptor_delays=(1000 100 1050 1100 1150 1200 1250 1300 1350 1400 150 1600 1800 2000 200 2200 2400 250 2600 2800 3000 300 3500 350 4000 400 4500 450 5000 500 50  5500 550 600 650 750 800 850 900 950)
+#acceptor_delays=(50 100 150 200 250 300 350 400 450 500 550 600 650 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1600 1800 2000 2200 2400 2600 2800 3000 3500 4000 4500 5000 5500)
+acceptor_delays=(1)
+
 
 #rm exp1/*
+erl -make
 
 for i in "${sleep_p1[@]}"; do
     for j in "${sleep_p2[@]}"; do
@@ -22,18 +28,24 @@ for i in "${sleep_p1[@]}"; do
 		#echo "export delay=$d; erl -pa ebin -eval paxy:start["$i", "$j", "$k"] > exp1/paxy"$i"_"$j"_"$k"_"$d".out & pid=$!; sleep 20; kill $pid"
 
 		filename=paxy"$i"_"$j"_"$k"_"$d".out;
-		export delay=$d; erl -noshell -pa ebin -eval "paxy:start([$i, $j, $k])" > exp1/$filename & pid=$!; sleep 35; kill $pid
 
-		result=$(grep "Total" exp1/$filename | awk -F '[:]' '{print $2}')
-		#if [ -n "$result" ]; then
-		    #result=35000
-		#fi
-		echo $d, $result >> exp1/clean
-		#awk -F'[:]' '{print $2}' paxy200_200_200_50.out
+		# RUN, GET TIME TO REACH CONSENSUS
+		#export delay=$d; erl -noshell -pa ebin -eval "paxy:start([$i, $j, $k])" > exp1/$filename & pid=$!; sleep 35; kill $pid
+		#result=$(grep "Total" exp1/$filename | awk -F '[:]' '{print $2}')
+		#echo $d, $result >> exp1/clean
 
-		#export delay=$d; erl -noshell -pa ebin -eval "paxy:start([$i, $j, $k])" > exp1/$filename;
+		# NUMBER OF ROUNDS TO REACH AGREEMENT
+		#result=$(grep "DECIDED" exp1/$filename | tail -1)
+		#echo $d, $result >> exp1/rounds
+
+		# NUMBER OF TIMEOUTS
+		result=$(grep "Timed out" exp1/$filename | wc -l)
+		echo $d, $result >> exp1/timeouts
 	    done
 
 	done
     done
 done
+
+#sort -V -t ',' -k1 oldrounds > rounds
+# Ordenar csv por valor numérico por la primera columna

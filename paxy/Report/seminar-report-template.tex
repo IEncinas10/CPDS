@@ -357,6 +357,13 @@ The number of rounds is 2 or less for almost every delay. It only increases alon
     \caption{Rounds needed to reach consensus w.r.t the delay\protect\footnotemark \   $\text{proposer timeout}=2000$}
 \end{figure} 
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{plots/timeouts.pdf}
+    %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
+    \caption{Number of timeouts w.r.t the delay\   $\text{proposer timeout}=2000$}
+\end{figure} 
+
 \footnotetext{Actually, with respect to the mean value of the gaussian distribution it follows}
 
 %\subsubsection{Does the algorithm still terminate? Does it require more rounds? How does the impact of the message delays depend on the value of the timout at the proposer?}
