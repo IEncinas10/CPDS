@@ -4,15 +4,51 @@
 -define(RED, {255,0,0}).
 -define(BLUE, {0,0,255}).
 -define(GREEN, {0,255,0}).
+-define(AMBER, {255,191,0}).
+-define(AMETHYST, {153,102,204}).
+-define(AO, {0,127,0}).
+
+% https://www.erlang.org/doc/man/lists.html#split-2
+-define(proposers, 3).
+getproposers() ->
+    Val = os:getenv("proposers"),
+    case Val of
+	false -> ?proposers;
+	_ -> N = list_to_integer(Val), N
+    end.
+
+-define(acceptors, 5).
+getacceptors() ->
+    Val = os:getenv("acceptors"),
+    case Val of
+	false -> ?acceptors;
+	_ -> N = list_to_integer(Val), N
+    end.
 
 % Sleep is a list with the initial sleep time for each proposer
 start(Sleep) ->
-  AcceptorNames = ["Acceptor a", "Acceptor b", "Acceptor c", "Acceptor d", 
-                   "Acceptor e"],
-  AccRegister = [a, b, c, d, e],
-  ProposerNames = [{"Proposer kurtz", ?RED}, {"Proposer kilgore", ?GREEN}, 
-                   {"Proposer willard", ?BLUE}],
-  PropInfo = [{kurtz, ?RED}, {kilgore, ?GREEN}, {willard, ?BLUE}],
+  NumAcceptors = getacceptors(),
+  AcceptorNames = lists:sublist(
+		  ["Acceptor a", "Acceptor b", "Acceptor c", "Acceptor d", 
+		   "Acceptor e", "Acceptor f", "Acceptor g", "Acceptor h", 
+		   "Acceptor i", "Acceptor j", "Acceptor k", "Acceptor l", 
+                   "Acceptor m", "Acceptor n", "Acceptor o", "Acceptor p", 
+		   "Acceptor q", "Acceptor r", "Acceptor s"], NumAcceptors),
+  AccRegister = lists:sublist([a, b, c, d, e, f, g, h, i, j, k, 
+		   l, m, n, o, p, q, r, s], NumAcceptors),
+
+  NumProposers = getproposers(),
+  ProposerNames = lists:sublist([
+		     {"Proposer kurtz", ?RED}, {"Proposer kilgore", ?GREEN}, 
+		     {"Proposer willard", ?BLUE}, {"Proposer pedro", ?AMBER}, 
+		     {"Proposer juan", ?AMETHYST}, {"Proposer alfonsito", ?AO}, 
+		     {"Proposer ignacio", ?BLUE}, {"Proposer adrian", ?AMBER}], 
+		    NumProposers),
+
+  PropInfo = lists:sublist([
+		{kurtz, ?RED}, {kilgore, ?GREEN}, {willard, ?BLUE}, {pedro, ?AMBER}, 
+		{juan, ?AMETHYST}, {alfonsito, ?AO}, {ignacio, ?BLUE}, {adrian, ?AMBER}], 
+	       NumProposers),
   register(gui, spawn(fun() -> gui:start(AcceptorNames, ProposerNames) end)),
   gui ! {reqState, self()},
   receive
