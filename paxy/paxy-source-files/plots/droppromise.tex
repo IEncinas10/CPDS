@@ -1,0 +1,47 @@
+\documentclass{standalone}
+
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepgfplotslibrary{fillbetween}
+\usetikzlibrary{patterns}
+\pgfplotsset{compat=1.10}
+
+\begin{document}
+    \begin{tikzpicture}
+	\begin{axis}[
+	    width=\textwidth,
+	    %height=0.55\textwidth,
+	    xlabel=Drop rate (\%),
+	    grid=major,
+	    ylabel=Time (ms),
+	    xmin=-0.1,xmax=100, % <-- added here to preserve view
+	    ymin=-0.1,ymax=35000,
+	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=2}
+	]
+
+	\addplot[mark=pentagon, mark size=1pt, black] table [col sep=comma]{../droppromise/clean};	
+	\addlegendentry{Agreement time};
+	
+        %\addplot[black, thick, samples=50, domain=0:5000] {35000};
+        %\addlegendentry{Did not finish}
+
+	\addplot[thick, samples=50, smooth,domain=0:6,red, forget plot] coordinates {(85,0)(85,35000)};
+
+	\path[name path=A] (axis cs:85,0) -- (axis cs:85,35000);
+	\path[name path=B] (axis cs:100,0) -- (axis cs:100,35000);
+
+	\addplot[pattern=north west lines,pattern color=red, area legend]
+	    fill between[
+		of=A and B,
+		soft clip={domain=0:1000},
+	    ];
+	\addlegendentry{Did not finish};
+
+	%\draw[dashed] (axis cs:0,200) -- (axis cs:5000, 200);
+	%\addlegendentry{Proposer starting delay}
+
+	\addplot [dashed, samples=200,domain=0:5000] coordinates {(0, 200)(5000,200)};
+	\addlegendentry{Proposer starting delay};
+	\end{axis}
+    \end{tikzpicture}
+\end{document}

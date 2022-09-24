@@ -1,0 +1,61 @@
+\documentclass{standalone}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+\definecolor{armygreen}{rgb}{0.29, 0.33, 0.13}
+\definecolor{turquoise}{rgb}{0.19, 0.84, 0.78}
+
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepgfplotslibrary{fillbetween}
+\usetikzlibrary{patterns}
+\pgfplotsset{compat=1.10}
+
+\begin{document}
+    \begin{tikzpicture}
+	\begin{axis}[
+	    width=\textwidth,
+	    %height=0.55\textwidth,
+	    xlabel=Delay (ms),
+	    grid=major,
+	    ylabel=Time (ms),
+	    xmin=-0.1,xmax=5000, % <-- added here to preserve view
+	    ymin=-0.1,ymax=34000,
+	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=2}
+	]
+
+	\addplot[mark=triangle, mark size=1pt, black] table [col sep=comma]{../exp1/clean};	
+	    \addlegendentry{Agreement time};
+
+
+	%\addplot[mark=pentagon, mark size=1pt, purple] table [col sep=comma]{../nosorry/clean};	
+	    %\addlegendentry{Agreement time (no sorry)};
+
+	
+        %\addplot[black, thick, samples=50, domain=0:5000] {20000};
+        %\addlegendentry{Did not finish}
+
+	\addplot[thick, samples=50, smooth,domain=0:6,blue] coordinates {(2000,0)(2000,35000)};
+	\addlegendentry{Timeout time}
+	\addplot[thick, samples=50, smooth,domain=0:6,red, forget plot] coordinates {(4100,0)(4100,35000)};
+
+	\path[name path=A] (axis cs:4100,0) -- (axis cs:4100,35000);
+	\path[name path=B] (axis cs:5000,0) -- (axis cs:5000,35000);
+
+	\addplot[pattern=north west lines,pattern color=red, area legend]
+	    fill between[
+		of=A and B,
+		soft clip={domain=0:1},
+	    ];
+	\addlegendentry{Did not finish};
+
+	%\draw[dashed] (axis cs:0,200) -- (axis cs:5000, 200);
+	%\addlegendentry{Proposer starting delay}
+
+	\addplot [dashed, samples=200,domain=0:5000] coordinates {(0, 200)(5000,200)};
+	\addlegendentry{Proposer starting delay};
+
+	\addplot[mark=pentagon, mark size=1pt, turquoise] table [col sep=comma]{../nosorry2/clean};	
+	    \addlegendentry{A. time (no sorry) Keeping rand calls};
+	\end{axis}
+    \end{tikzpicture}
+\end{document}

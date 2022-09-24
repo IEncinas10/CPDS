@@ -1,0 +1,49 @@
+\documentclass{standalone}
+
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepgfplotslibrary{fillbetween}
+\usetikzlibrary{patterns}
+\usepgfplotslibrary{colormaps}
+\pgfplotsset{compat=newest}
+
+\begin{document}
+    \begin{tikzpicture}
+	\begin{axis}[
+	    width=\textwidth,
+	    %height=0.55\textwidth,
+	    xlabel= Proposers,
+	    %xtick={3, 4, 5, 6},
+	    grid=major,
+	    ylabel=Acceptors,
+	    zlabel=Time (ms),
+	    xmin=1,xmax=8, % <-- added here to preserve view
+	    ymin=1,ymax=19,
+	    %zmin=4000, zmax=8400,
+	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=2},
+	    colorbar,
+	    colormap/violet,
+	    view={0}{90}
+	]
+
+	%\addplot3[surf, mesh/rows=4, shader=interp] table [col sep=comma]{../exp4/clean};	
+	\addplot3[mark=*, scatter, surf, mesh/rows=4, shader=interp] table [col sep=comma]{../exp4/clean};	
+	
+	\end{axis}
+    \end{tikzpicture}
+\end{document}
+
+%\documentclass{standalone}
+%\usepackage{pgfplots}
+%\pgfplotsset{compat=newest}
+%\usepgfplotslibrary{patchplots}
+
+%\begin{document}
+%\begin{tikzpicture}
+%\begin{axis}[x dir=reverse]
+%\addplot3 [surf, mesh/rows=13, shader=interp, patch type=bilinear]
+  %table[x=f, y=time, z=psd, col sep=comma] {datastft.csv};
+
+%\end{axis}
+%\end{tikzpicture}
+%\end{document}
