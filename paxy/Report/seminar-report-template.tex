@@ -356,22 +356,49 @@ The number of rounds is 2 or less for almost every delay. It only increases alon
     %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
     \caption{Rounds needed to reach consensus w.r.t the delay\protect\footnotemark \   $\text{proposer timeout}=2000$}
 \end{figure} 
+\footnotetext{Actually, with respect to the mean value of the gaussian distribution it follows}
+
+
+We can see a similar trend for the total number of timeouts, as shown at Figure \ref{timeouts}. The number of timeouts grows drastically once our expected delay becomes sufficiently large.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{plots/timeouts.pdf}
     %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
     \caption{Number of timeouts w.r.t the delay\   $\text{proposer timeout}=2000$}
+    \label{timeouts}
 \end{figure} 
 
-\footnotetext{Actually, with respect to the mean value of the gaussian distribution it follows}
+
+
 
 %\subsubsection{Does the algorithm still terminate? Does it require more rounds? How does the impact of the message delays depend on the value of the timout at the proposer?}
 
 
 \subsection{Avoid sending sorry messages}
 
-\subsubsection{Could you come to an agreement when sorry messages are not sent?}
+The sorry messages are optional. As explained in the theory sessions they don't serve any specific purpouse \textit{per se}. They're only exploited at Section \ref{sec:improvement}. It can also be seen clearly in the source code. When we receive sorry messages we do nothing but wait again for new messages.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{plots/nosorry.pdf}
+    %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
+    \caption{Agreement time effects caused by removing sorry messages}
+    \label{nosorry1}
+\end{figure} 
+The first experiment we tried was just commenting the whole sorry message thing, and the results obtained are shown at Figure \ref{nosorry1}. They were somewhat surprising as they don't paint a clear picture. We couldn't construct a satisfactory explanation, but then we remembered something: \textbf{we're using random numbers!} Noticing this, the solution is evident: uncomment the \textit{rand:uniform} calls.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{plots/nosorry2.pdf}
+    %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
+    \caption{Removing sorry messages but keeping rand calls}
+\end{figure} 
+
+We rerun the experiments and got other results that are self-consistent over the range of delays considered on our test runs. We see that removing sorry message does in fact bring a bit of speedup. It is reasonable at we're not using this sorry messages for anything\footnote{At this point we're not using the improvement based on sorry messages. See Section \ref{sec:improvement}}.
+
+
+%\subsubsection{Could you come to an agreement when sorry messages are not sent?}
 
 \subsection{Try randomly dropping promise and vote messages in the acceptor}
 
@@ -390,6 +417,7 @@ The number of rounds is 2 or less for almost every delay. It only increases alon
 \subsection{Experiments}
 
 \section{Improvement based on sorry messages}
+\label{sec:improvement}
 
 \subsection{Experiments}
 
