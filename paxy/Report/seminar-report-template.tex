@@ -401,7 +401,7 @@ We rerun the experiments and got other results that are self-consistent over the
 %\subsubsection{Could you come to an agreement when sorry messages are not sent?}
 
 \subsection{Try randomly dropping promise and vote messages in the acceptor}
-
+\todo[inline]{Razonar por qué el algoritmo no falla en ningún caso}
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{plots/dropboth.pdf}
@@ -411,6 +411,8 @@ We rerun the experiments and got other results that are self-consistent over the
 \subsubsection{How does the drop ratio affect the number of rounds required to reach consensus?}
 
 \subsection{Try increasing the number of acceptors and proposers}
+
+%\todo[inline]{Comprobar nuevos resultados. Viejos guardados en \_backup...}
 
 \begin{figure}[H]
   \centering
@@ -435,6 +437,12 @@ We rerun the experiments and got other results that are self-consistent over the
 
 \section{Improvement based on sorry messages}
 \label{sec:improvement}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{plots/improvement.pdf}
+    \caption{}
+\end{figure} 
 
 \subsection{Experiments}
 
