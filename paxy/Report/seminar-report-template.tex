@@ -329,6 +329,7 @@ The second type of message acceptor can receive is \textit{accept} message. In t
 \textit{Provide evidence of the experiments you did (e.g., use screenshots) and discuss the results you got. In addition, you may provide figures or tables with experimental results of the system evaluation. For each seminar, we will provide you with some guidance on which kind of evaluation you should do.}
 
 \subsection{Introducing delays in the promise and vote messages}
+\label{sec:delays}
 
 We have tried adding delay both to the promise and vote messages. The expected result is 
 that adding delay will increase the time needed to reach consensus. As we're dealing with
@@ -376,6 +377,7 @@ We can see a similar trend for the total number of timeouts, as shown at Figure 
 
 
 \subsection{Avoid sending sorry messages}
+\label{sec:avoidsorry}
 
 The sorry messages are optional. As explained in the theory sessions they don't serve any specific purpouse \textit{per se}. They're only exploited at Section \ref{sec:improvement}. It can also be seen clearly in the source code. When we receive sorry messages we do nothing but wait again for new messages.
 
@@ -400,32 +402,65 @@ We rerun the experiments and got other results that are self-consistent over the
 
 %\subsubsection{Could you come to an agreement when sorry messages are not sent?}
 
+\clearpage
+
 \subsection{Try randomly dropping promise and vote messages in the acceptor}
 \todo[inline]{Razonar por qué el algoritmo no falla en ningún caso}
+
+We have studied the effects of dropping vote messages, promise messages and both at the same
+time.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{plots/dropboth.pdf}
     \caption{Agreement time w.r.t the drop ratio of both vote and promise messages}
 \end{figure} 
 
-\subsubsection{How does the drop ratio affect the number of rounds required to reach consensus?}
+Dropping a specific kind of message affects the agreement time significantly but isn't too
+problematic unless we go to very high probabilities. Dropping both kinds of messages is obviously worse and specially so in the high end of the probability range.
 
+Overall the algorithm seems pretty robust at first sight, because we're able to terminate even with very high dropping probabilities. Further tests with varying number of proposers/acceptors is due to reach strong conclusions but the results are encouraging.
+
+
+\subsubsection{How does the drop ratio affect the number of rounds required to reach consensus?}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{plots/roundsdrop.pdf}
+    \caption{Rounds w.r.t the drop ratio of both vote and promise messages}
+\end{figure} 
+
+The number of rounds is almost identical to the agreement time one.
+
+
+\clearpage
 \subsection{Try increasing the number of acceptors and proposers}
 
-%\todo[inline]{Comprobar nuevos resultados. Viejos guardados en \_backup...}
+We have varied the number of proposers from $1$ to $8$ and the number of acceptors
+from $1$ to $19$. Intuitively, the expected outcome is that adding proposers increases the number of conflicts and increases the agreement time. Adding acceptors should also impact the runtime negatively but much less noticeably. 
+
+Of course they would also provide the system with resilience to problems that we have already considered such as message delays and message dropping under realistic circumstances. \todo[inline]{Check with jordi. Perhaps they add resilience when adverse conditions have $<$ 50\% probability but worsen the result otherwise??}
+
+
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{plots/exp4.pdf}
-    \caption{}
+    \caption{Agreement time variation w.r.t nº of proposers and acceptors}
 \end{figure} 
+
+As there are meassurements present noise the surface plot is not too illuminating, thus we also present a 2D plot that we believe provides good insight in a clearer manner.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{plots/exp4_surf.pdf}
-    \caption{}
+    \caption{Surface plot of agreement time variation w.r.t nº of proposers and acceptors}
 \end{figure} 
-\subsubsection{What is the impact of having more acceptors while keeping the number of proposers?}
+
+Ignoring runtime spikes of unknown origin that might be caused by specific conditions of the testing system the results indicate what we expected. Increasing the number of proposers increases conflict and overall runtime. The effect of increasing acceptors is not so apparent, or at least it isn't in our testing results.
+
+
+
+%\subsubsection{What is the impact of having more acceptors while keeping the number of proposers?}
 
 \subsection{Adapt the paxy module to create the proposers and acceptors in a remote Erlang instance}
 
@@ -435,20 +470,19 @@ We rerun the experiments and got other results that are self-consistent over the
 
 \subsection{Experiments}
 
+\clearpage
 \section{Improvement based on sorry messages}
 \label{sec:improvement}
+
+The improvement is fairly straightforward. We just have to mimic the procedure applied to the votes and promises for the sorry messages. Then, instead of timing out we can abort early when we're sure our proposal is not getting enough support to proceed with the voting phase.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{plots/improvement.pdf}
-    \caption{}
+    \caption{Agreement time comparison between initial version, no sorry version and the improved version}
 \end{figure} 
 
-\subsection{Experiments}
-
-\section{Open questions}
-
-\textit{Try to answer all the open questions in the documentation. When possible, do experiments to support your answers.}
+We have evaluated the effects with respect to the message delays, building on the work done at Subsections \ref{sec:delays} and \ref{sec:avoidsorry}. Results show that this improvement has a big impact for small delays, which should be the default scenario. When going past the timeout time at some points the improved version performs noticeably worse than the default.
 
 \section{Personal opinion}
 
