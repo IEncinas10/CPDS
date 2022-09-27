@@ -17,7 +17,7 @@ sleep_p3=(200)
 
 acceptor_delays=(1)
 
-#drop_probabilities=(5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95)
+drop_probabilities=(5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95)
 
 num_proposers=(1 2 3 4 5 6 7 8)
 num_acceptors=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)
@@ -56,8 +56,9 @@ for i in "${sleep_p1[@]}"; do
 		#result=$(grep "Total" nosorry2/$filename | awk -F '[:]' '{print $2}')
 		#echo $d, $result >> nosorry2/clean
 
-		#for p in "${drop_probabilities[@]}"; do
+		for p in "${drop_probabilities[@]}"; do
 		    #echo $i, $j, $k, $d, $p;
+
 
 		    # Drop promises
 		    #filename=paxy"$i"_"$j"_"$k"_"$d"_"$p".out;
@@ -76,18 +77,29 @@ for i in "${sleep_p1[@]}"; do
 		    #export delay=$d; export drop=$p; erl -noshell -pa ebin -eval "paxy:start([$i, $j, $k])" > dropboth/$filename & pid=$!; sleep 35; kill $pid
 		    #result=$(grep "Total" dropboth/$filename | awk -F '[:]' '{print $2}')
 		    #echo $p, $result >> dropboth/clean
-		#done
 
-		for p in "${num_proposers[@]}"; do
-		    for a in "${num_acceptors[@]}"; do
+		    # NUMBER OF ROUNDS TO REACH AGREEMENT
+		    filename=paxy"$i"_"$j"_"$k"_"$d"_"$p".out;
+		    result=$(grep "DECIDED" dropboth/$filename | tail -1)
+		    echo $p, $result >> dropboth/rounds
 
-			echo $i, $j, $k, $d, $p, $a;
-			filename=paxy"$i"_"$j"_"$k"_"$d"_"$p"_"$a".out;
-			export delay=$d; export proposers=$p; export acceptors=$a; erl -noshell -pa ebin -eval "paxy:start([$i, $j, $k, $k, $k, $k, $k, $k])" > exp4/$filename & pid=$!; sleep 15; kill $pid
-			result=$(grep "Total" exp4/$filename | awk -F '[:]' '{print $2}')
-			echo $p, $a, $result >> exp4/clean
-		    done
+		    result=$(grep "DECIDED" dropvote/$filename | tail -1)
+		    echo $p, $result >> dropvote/rounds
+
+		    result=$(grep "DECIDED" droppromise/$filename | tail -1)
+		    echo $p, $result >> droppromise/rounds
 		done
+
+		#for p in "${num_proposers[@]}"; do
+		    #for a in "${num_acceptors[@]}"; do
+
+			#echo $i, $j, $k, $d, $p, $a;
+			#filename=paxy"$i"_"$j"_"$k"_"$d"_"$p"_"$a".out;
+			#export delay=$d; export proposers=$p; export acceptors=$a; erl -noshell -pa ebin -eval "paxy:start([$i, $j, $k, $k, $k, $k, $k, $k])" > exp4/$filename & pid=$!; sleep 15; kill $pid
+			#result=$(grep "Total" exp4/$filename | awk -F '[:]' '{print $2}')
+			#echo $p, $a, $result >> exp4/clean
+		    #done
+		#done
 
 		## RUN, GET TIME TO REACH CONSENSUS
 		#filename=paxy"$i"_"$j"_"$k"_"$d".out;
