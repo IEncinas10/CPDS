@@ -1,5 +1,5 @@
 \documentclass[a4paper, 10pt]{article}
-\usepackage[a4paper, total={5.5in, 8in}]{geometry}
+\usepackage[a4paper,left=3cm,right=2cm,top=2.5cm,bottom=2.5cm]{geometry}
 \usepackage[utf8]{inputenc} % Change according your file encoding
 \usepackage{graphicx}
 %\usepackage[demo]{graphicx}
@@ -325,8 +325,12 @@ The second type of message acceptor can receive is \textit{accept} message. In t
   \item If the \textit{Round} is lower than the \textit{Promised}, we send a \textit{sorry} message with the \textit{Round} value we are refusing.
 \end{itemize}
 
+\clearpage
 \section{Experiments}
-\textit{Provide evidence of the experiments you did (e.g., use screenshots) and discuss the results you got. In addition, you may provide figures or tables with experimental results of the system evaluation. For each seminar, we will provide you with some guidance on which kind of evaluation you should do.}
+
+We have used a bash script to run simulations as extensive as possible. It is worth noting that results might contain hidden effects resultant of the specific hardware conditions among other things, and thats why we believe solid conclusions cannot be reached in many cases.
+
+Nonetheless, thanks to this thorough experimentation we have been able to see interesting effects in a detailed manner and come to the conclusion that studying this algorithm in depth requires much more testing and would prove very instructive.
 
 \subsection{Introducing delays in the promise and vote messages}
 \label{sec:delays}
@@ -353,7 +357,7 @@ is not feasable, and it wouldn't really matter as we need a somewhat reliable al
 The number of rounds is 2 or less for almost every delay. It only increases along with the runtime spikes we see starting at $delay=2800$, where the decision starts taking 6, 9 and up to 10 rounds.
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{plots/roundsexp1.pdf}
+  \includegraphics[width=.65\linewidth]{plots/roundsexp1.pdf}
     %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
     \caption{Rounds needed to reach consensus w.r.t the delay\protect\footnotemark \   $\text{proposer timeout}=2000$}
 \end{figure} 
@@ -364,11 +368,13 @@ We can see a similar trend for the total number of timeouts, as shown at Figure 
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{plots/timeouts.pdf}
+  \includegraphics[width=.65\linewidth]{plots/timeouts.pdf}
     %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
     \caption{Number of timeouts w.r.t the delay\   $\text{proposer timeout}=2000$}
     \label{timeouts}
 \end{figure} 
+
+\clearpage
 
 
 
@@ -398,6 +404,12 @@ The first experiment we tried was just commenting the whole sorry message thing,
 \end{figure} 
 
 We rerun the experiments and got other results that are self-consistent over the range of delays considered on our test runs. We see that removing sorry message does in fact bring a bit of speedup. It is reasonable at we're not using this sorry messages for anything\footnote{At this point we're not using the improvement based on sorry messages. See Section \ref{sec:improvement}}.
+
+
+Apart from the somewhat evident notion that avoiding useless messages will bring some speedup 
+we believe that not sending sorry messages results in earlier timeouts for the proposers in 
+specific cases. This can be very benefitial in some cases when extreme delays are considered.
+\todo[inline]{Preguntar jordi}
 
 
 %\subsubsection{Could you come to an agreement when sorry messages are not sent?}
@@ -440,27 +452,27 @@ from $1$ to $19$. Intuitively, the expected outcome is that adding proposers inc
 
 Of course they would also provide the system with resilience to problems that we have already considered such as message delays and message dropping under realistic circumstances. \todo[inline]{Check with jordi. Perhaps they add resilience when adverse conditions have $<$ 50\% probability but worsen the result otherwise??}
 
-
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\linewidth]{plots/exp4.pdf}
-    \caption{Agreement time variation w.r.t nº of proposers and acceptors}
-\end{figure} 
-
-As there are meassurements present noise the surface plot is not too illuminating, thus we also present a 2D plot that we believe provides good insight in a clearer manner.
-
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{plots/exp4_surf.pdf}
     \caption{Surface plot of agreement time variation w.r.t nº of proposers and acceptors}
 \end{figure} 
 
+As there are meassurements present noise the surface plot is not too illuminating, thus we also present a 2D plot that we believe provides good insight in a clearer manner.
+
+\clearpage
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{plots/exp4.pdf}
+    \caption{Agreement time variation w.r.t nº of proposers and acceptors}
+\end{figure} 
+
+
 Ignoring runtime spikes of unknown origin that might be caused by specific conditions of the testing system the results indicate what we expected. Increasing the number of proposers increases conflict and overall runtime. The effect of increasing acceptors is not so apparent, or at least it isn't in our testing results.
 
-
-
 %\subsubsection{What is the impact of having more acceptors while keeping the number of proposers?}
+
+\clearpage
 
 \subsection{Adapt the paxy module to create the proposers and acceptors in a remote Erlang instance}
 
@@ -504,6 +516,7 @@ The improvement is fairly straightforward. We just have to mimic the procedure a
 
 We have evaluated the effects with respect to the message delays, building on the work done at Subsections \ref{sec:delays} and \ref{sec:avoidsorry}. Results show that this improvement has a big impact for small delays, which should be the default scenario. When going past the timeout time at some points the improved version performs noticeably worse than the default.
 
+\clearpage
 \section{Personal opinion}
 
 \textit{Provide your personal opinion of the seminar, indicating whether it should be included in next year's course or not.}
