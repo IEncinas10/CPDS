@@ -1,5 +1,5 @@
 -module(paxy).
--export([start/1, stop/0, stop/1]).
+-export([start/1, stop/0, stop/1, crash/1]).
 
 -define(RED, {255,0,0}).
 -define(BLUE, {0,0,255}).
@@ -61,9 +61,8 @@ start(Sleep) ->
         wait_proposers(length(PropIds)),
         End = erlang:monotonic_time(),
         Elapsed = erlang:convert_time_unit(End-Begin, native, millisecond),
-        io:format("[Paxy] Total elapsed time: ~w :ms~n", [Elapsed]),
-	stop()
-	% Esto da error pero acaba bien...
+        io:format("[Paxy] Total elapsed time: ~w :ms~n", [Elapsed])
+		% Esto da error pero acaba bien...
       end)
   end.
     
@@ -107,9 +106,27 @@ stop() ->
 stop(Name) ->
   case whereis(Name) of
     undefined ->
+      io:format("error ~w~n", [Name]),
       ok;
     Pid ->
+      pers:delete(Name),
       Pid ! stop
   end.
 
- 
+
+crash(Name) ->
+  case whereis(Name) of
+    undefined ->
+      ok;
+    Pid ->
+      
+      io:format("[Acceptor ~w] CRASHED~n", [Name]),
+      pers:open(Name),
+      {_, _, _, Pn} = pers:read(Name),
+      Pn ! {updateAcc, "Voted: CRASHED", "Promised: CRASHED", {0,0,0}},
+      pers:close(Name),
+      unregister(Name),
+      exit(Pid, "crash"),
+      timer:sleep(2000),
+      register(Name, acceptor:start(Name, na))
+  end.

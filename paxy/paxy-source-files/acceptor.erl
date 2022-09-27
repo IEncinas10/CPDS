@@ -42,7 +42,23 @@ init(Name, PanelId) ->
   Voted = order:null(),
   rand:seed(exs1024s, {123, 123534, 345345}),
   Value = na,
-  acceptor(Name, Promised, Voted, Value, PanelId).
+  pers:open(Name),
+  {Pr, Vt, Ac, Pn} = pers:read(Name),
+  case Pn == na of
+    true ->
+
+      %pers:store(Name, Pr, Vt, Ac, Pn),
+      io:format("Just Initiation~n"),
+      acceptor(Name, Promised, Voted, Value, PanelId);
+    false->
+
+      io:format("[Acceptor ~w] Restarted: promised ~w voted ~w colour ~w~n",
+                 [Name, Pr, Vt, Ac]),
+
+      Pn ! {updateAcc, "Restarted: " ++ io_lib:format("~p", [Vt]), 
+                 "Promised: " ++ io_lib:format("~p", [Pr]), Ac},
+      acceptor(Name, Pr, Vt, Ac, Pn)
+    end.
 
 acceptor(Name, Promised, Voted, Value, PanelId) ->
   receive
@@ -50,6 +66,7 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
       case order:gr(Round, Promised) of
 	  % Send promise with our {Round(new), Voted(old), Value(old)} state 
         true ->
+    pers:store(Name, Round, Voted, Value, PanelId),
 	  Proposer ! {promise, Round, Voted, Value},               
 
 	  %Experiment 2.i) 
@@ -108,8 +125,10 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
               PanelId ! {updateAcc, "Voted: " ++ io_lib:format("~p", [Round]), 
                          "Promised: " ++ io_lib:format("~p", [Promised]), Proposal},
 	      % Update Voted and Value = {Round, Proposal}
+              pers:store(Name, Promised, Round, Proposal, PanelId),
               acceptor(Name, Promised, Round, Proposal, PanelId);
             false ->
+              pers:store(Name, Promised, Round, Value, PanelId),
               acceptor(Name, Promised, Round, Voted, PanelId)
           end;                            
         false ->
@@ -130,3 +149,4 @@ acceptor(Name, Promised, Voted, Value, PanelId) ->
       PanelId ! stop,
       ok
   end.
+
