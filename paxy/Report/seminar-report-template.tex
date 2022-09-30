@@ -181,8 +181,6 @@ collect(N, Round, MaxVoted, Proposal) ->
 	\end{lstlisting}
     \end{minipage}
 
-\todo[inline]{Terminar cuando TODO esté hecho. Preguntar al profesor en clase}
-
 For the \textbf{collect} function, we expect to receive the reply from the acceptor to our accept. Depending on the message received our function will do:
 
 \begin{itemize}
@@ -409,7 +407,6 @@ We rerun the experiments and got other results that are self-consistent over the
 Apart from the somewhat evident notion that avoiding useless messages will bring some speedup 
 we believe that not sending sorry messages results in earlier timeouts for the proposers in 
 specific cases. This can be very benefitial in some cases when extreme delays are considered.
-\todo[inline]{Preguntar jordi}
 
 
 %\subsubsection{Could you come to an agreement when sorry messages are not sent?}
@@ -417,7 +414,6 @@ specific cases. This can be very benefitial in some cases when extreme delays ar
 \clearpage
 
 \subsection{Try randomly dropping promise and vote messages in the acceptor}
-\todo[inline]{Razonar por qué el algoritmo no falla en ningún caso}
 
 We have studied the effects of dropping vote messages, promise messages and both at the same
 time.
@@ -450,7 +446,7 @@ The number of rounds is almost identical to the agreement time one.
 We have varied the number of proposers from $1$ to $8$ and the number of acceptors
 from $1$ to $19$. Intuitively, the expected outcome is that adding proposers increases the number of conflicts and increases the agreement time. Adding acceptors should also impact the runtime negatively but much less noticeably. 
 
-Of course they would also provide the system with resilience to problems that we have already considered such as message delays and message dropping under realistic circumstances. \todo[inline]{Check with jordi. Perhaps they add resilience when adverse conditions have $<$ 50\% probability but worsen the result otherwise??}
+Of course they would also provide the system with resilience to problems that we have already considered such as message delays and message dropping under realistic circumstances. 
 
 \begin{figure}[H]
   \centering
