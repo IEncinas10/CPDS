@@ -470,17 +470,64 @@ Ignoring runtime spikes of unknown origin that might be caused by specific condi
 
 \clearpage
 
-\subsection{Adapt the paxy module to create the proposers and acceptors in a remote Erlang instance}
+\subsection{Remote Erlang instances}
+
+For this experiment we have implemented a few changes in the code to make it distributed. In order to achieve this goal, we have introduced changes in \textit{paxy.erl} file.
+
+Changing the way to call start acceptors and proposers to start the function in a specified node. For this feature, we have used spawn function, in which we have specified the node and the function to call (start\_acceptors/proposers) in that node. Also, we need to modify the way to stop de acceptors to have an unique \textit{stop} function. For that, we use \textit{spawn} function again to call \textit{stop} fuction in case the process we can kill is not in that node.
+
+In the next figures we can see how the distributed algorithm works. In the Figure \ref{start}, we start the algorithm with just one start function, which is the responsible to start the remote execution. In the Figure \ref{execution} we can see that the algorithm has finished correctly after its execution. After the execution we call the function \textit{stop} to kill all the proccess, local and remote (Figure \ref{stop}). 
+
+Finally, we did an extra test to verify that the acceptors are running in a remote node. In order to test it, we have try to execute the algorithm with the \textit{acc} node down, obtaining error in the execution because we cant start acceptors (Figure \ref{error}).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=.85\linewidth]{images/remoteStart2nodes.png}
+    %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
+    \caption{Starting Erlang with 2 nodes}
+    \label{start}
+\end{figure} 
 
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=.65\linewidth]{images/remoteExecution.png}
+    %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
+    \caption{Successful execution in 2 nodes}
+    \label{execution}
+\end{figure} 
+
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=.65\linewidth]{images/stop.png}
+    %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
+    \caption{Unique stop function}
+    \label{stop}
+\end{figure} 
+
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=.85\linewidth]{images/remoteFailExecution.png}
+    %\caption{Number of rounds needed to reach consensus respect to the delay $\text{proposer timeout}=2000$}
+    \caption{Error with one node down}
+    \label{error}
+\end{figure} 
+
+\clearpage
 
 \section{Fault tolerance}
 
+In this experiment, we have made use of the \textit{pers} module in Acceptors. The goal of this experiment is to make the Acceptor persistent to crashes. The behaviour we expect is to retrieve the same state it had before its crash. In order to make it possible, we have used \textit{open, read, store, delete} fuction of \textit{pers} module. The following figures (Figure \ref{pre-crash}-\ref{restart}) shows the fault tolerance of the algorithm after using previous functions, and how the Acceptor reload its previous state.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{images/Tolerance1.png}
     \caption{State before crash of Acceptor B}
+    \label{pre-crash}
 \end{figure} 
 
 
@@ -488,15 +535,16 @@ Ignoring runtime spikes of unknown origin that might be caused by specific condi
   \centering
   \includegraphics[width=\linewidth]{images/Tolerance2.png}
     \caption{Acceptor B crashed}
+    \label{crash}
 \end{figure} 
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{images/Tolerance3.png}
     \caption{Acceptor B restarted with previous state}
+    \label{restart}
 \end{figure}
 
-\subsection{Experiments}
 
 \clearpage
 \section{Improvement based on sorry messages}
