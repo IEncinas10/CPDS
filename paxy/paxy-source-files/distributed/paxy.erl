@@ -1,5 +1,5 @@
 -module(paxy).
--export([stop/0, stop/1, crash/1, startDistributedProposer/2, startDistributedAcceptor/1, startDistributedProposersRegister/2]).
+-export([start/1, stop/0, stop/1]).
 
 -define(RED, {255,0,0}).
 -define(BLUE, {0,0,255}).
@@ -26,52 +26,24 @@ getacceptors() ->
     end.
 
 % Sleep is a list with the initial sleep time for each proposer
-
-%startDistributedAcceptor(PNode) ->
-
-%  NumAcceptors = getacceptors(),
-%  AcceptorNames = lists:sublist(
-%		  ["Acceptor a", "Acceptor b", "Acceptor c", "Acceptor d", 
-%		   "Acceptor e", "Acceptor f", "Acceptor g", "Acceptor h", 
-%		   "Acceptor i", "Acceptor j", "Acceptor k", "Acceptor l", 
-%                  "Acceptor m", "Acceptor n", "Acceptor o", "Acceptor p", 
-%	   "Acceptor q", "Acceptor r", "Acceptor s"], NumAcceptors),
-%  AccRegister = lists:sublist([a, b, c, d, e, f, g, h, i, j, k, 
-%		   l, m, n, o, p, q, r, s], NumAcceptors),
-%
-%  {proposers, PNode} ! {accReg, AccRegister},
-%
-%  register(guiAcc, spawn(fun() -> gui:start_acceptors(AcceptorNames) end)),
-%  guiAcc ! {reqStateAcc, self()},
-%  receive
-%    {reqStateAcc, State} ->
-%      {AccIds} = State,
-%        start_acceptors(AccIds, AccRegister)
-%  end.
-%
-
-startDistributedAcceptor(PNode) ->
-  AcceptorNames = ["Acceptor a", "Acceptor b", "Acceptor c", "Acceptor d", "Acceptor e"],
-  AccRegister = [a, b, c, d, e],
-  io:format("mando mensaje"),
-  {proposers, PNode} ! {accReg, AccRegister},
-  io:format("mensaje mandado"),
-  % computing panel heights
-  %AccPanelHeight = length(AcceptorNames)*50 + 0, %plus the spacer value
-  register(gui_acceptors, spawn(fun() -> gui:start_acceptors(AcceptorNames) end)),
-  gui_acceptors ! {reqStateAcc, self()},
-
-  receive
-    {reqStateAcc, State} ->
-      {AccIds} = State,
-      start_acceptors(AccIds, AccRegister)
-  end.
-
-startDistributedProposersRegister(Sleep, ANode) ->
-  register(proposers, spawn(fun() -> startDistributedProposer(Sleep, ANode) end)).
-
-startDistributedProposer(Sleep, ANode) ->
-
+start(Sleep) ->
+  Anode = 'acc@adrian',
+  Pnode = 'pro@adrian',
+  NumAcceptors = getacceptors(),
+  AcceptorNames = lists:sublist(
+		  ["Acceptor a", "Acceptor b", "Acceptor c", "Acceptor d", 
+		   "Acceptor e", "Acceptor f", "Acceptor g", "Acceptor h", 
+		   "Acceptor i", "Acceptor j", "Acceptor k", "Acceptor l", 
+                   "Acceptor m", "Acceptor n", "Acceptor o", "Acceptor p", 
+		   "Acceptor q", "Acceptor r", "Acceptor s"], NumAcceptors),
+  AccRegister = lists:sublist([a, b, c, d, e, f, g, h, i, j, k, 
+		   l, m, n, o, p, q, r, s], NumAcceptors),
+  
+  AccRegisterP = lists:sublist([{a, Anode}, {b, Anode}, {c, Anode}, {d, Anode}, 
+      {e, Anode}, {f, Anode}, {g, Anode}, {h, Anode}, {i, Anode}, {j, Anode}, {k, Anode}, 
+      {l, Anode}, {m, Anode}, {n, Anode}, {o, Anode}, {p,Anode}, {q, Anode}, {r, Anode}, 
+      {s, Anode}], NumAcceptors),
+    
   NumProposers = getproposers(),
   ProposerNames = lists:sublist([
 		     {"Proposer kurtz", ?RED}, {"Proposer kilgore", ?GREEN}, 
@@ -79,24 +51,29 @@ startDistributedProposer(Sleep, ANode) ->
 		     {"Proposer juan", ?AMETHYST}, {"Proposer alfonsito", ?AO}, 
 		     {"Proposer ignacio", ?BLUE}, {"Proposer adrian", ?AMBER}], 
 		    NumProposers),
-  
+
   PropInfo = lists:sublist([
 		{kurtz, ?RED}, {kilgore, ?GREEN}, {willard, ?BLUE}, {pedro, ?AMBER}, 
 		{juan, ?AMETHYST}, {alfonsito, ?AO}, {ignacio, ?BLUE}, {adrian, ?AMBER}], 
 	       NumProposers),
-
-  register(guiProp, spawn(fun() -> gui:start_proposers(ProposerNames) end)),
-  guiProp ! {reqStateProp, self()},
+  register(gui, spawn(fun() -> gui:start(AcceptorNames, ProposerNames) end)),
+  gui ! {reqState, self()},
   receive
-    {reqStateProp, State} ->
-      receive
-        {accReg, AccRegister} ->
-          {PropIds} = State,
-          start_proposers(PropIds, PropInfo, AccRegister, Sleep, ANode)
-      
-    end
-  end.
+    {reqState, State} ->
+      {AccIds, PropIds} = State,
+      spawn(Anode, fun() ->
+        start_acceptors(AccIds, AccRegister)end),
+      spawn(Pnode, fun() -> 
 
+        Begin = erlang:monotonic_time(),
+        start_proposers(PropIds, PropInfo, AccRegisterP, Sleep, self()),
+        wait_proposers(length(PropIds)),
+        End = erlang:monotonic_time(),
+        Elapsed = erlang:convert_time_unit(End-Begin, native, millisecond),
+        io:format("[Paxy] Total elapsed time: ~w :ms~n", [Elapsed])
+		% Esto da error pero acaba bien...
+      end)
+  end.
     
 start_acceptors(AccIds, AccReg) ->
   case AccIds of
@@ -105,7 +82,6 @@ start_acceptors(AccIds, AccReg) ->
     [AccId|Rest] ->
       [RegName|RegNameRest] = AccReg,
       register(RegName, acceptor:start(RegName, AccId)),
-      io:format("si~n"),
       start_acceptors(Rest, RegNameRest)
   end.
 
@@ -139,7 +115,9 @@ stop() ->
 stop(Name) ->
   case whereis(Name) of
     undefined ->
-      io:format("error ~w~n", [Name]),
+      Anode = 'acc@adrian',
+      io:format("Deleting in distributed node(~w): ~w~n", [Anode, Name]),
+      spawn(Anode, fun() -> stop(Name) end),
       ok;
     Pid ->
       pers:delete(Name),
@@ -147,19 +125,3 @@ stop(Name) ->
   end.
 
 
-crash(Name) ->
-  case whereis(Name) of
-    undefined ->
-      ok;
-    Pid ->
-      
-      io:format("[Acceptor ~w] CRASHED~n", [Name]),
-      pers:open(Name),
-      {_, _, _, Pn} = pers:read(Name),
-      Pn ! {updateAcc, "Voted: CRASHED", "Promised: CRASHED", {0,0,0}},
-      pers:close(Name),
-      unregister(Name),
-      exit(Pid, "crash"),
-      timer:sleep(2000),
-      register(Name, acceptor:start(Name, na))
-  end.

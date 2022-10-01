@@ -11,20 +11,20 @@ init(Name, Proposal, Acceptors, Sleep, PanelId, Main) ->
   timer:sleep(Sleep),
   Begin = erlang:monotonic_time(),
   Round = order:first(Name),
-  {Decision, LastRound} = round(Name, ?backoff, Round, Proposal, Acceptors, PanelId, Main),
+  {Decision, LastRound} = round(Name, ?backoff, Round, Proposal, Acceptors, PanelId),
   End = erlang:monotonic_time(),
   Elapsed = erlang:convert_time_unit(End-Begin, native, millisecond),
   io:format("[Proposer ~w] DECIDED ~w in round ~w after ~w ms~n", 
              [Name, Decision, LastRound, Elapsed]),
-  {Name, Main} ! done,
+  Main ! done,
   PanelId ! stop.
 
-round(Name, Backoff, Round, Proposal, Acceptors, PanelId, Main) ->
+round(Name, Backoff, Round, Proposal, Acceptors, PanelId) ->
   io:format("[Proposer ~w] Phase 1: round ~w proposal ~w~n", 
              [Name, Round, Proposal]),
   % Update gui
   PanelId ! {updateProp, "Round: " ++ io_lib:format("~p", [Round]), Proposal},
-  case ballot(Name, Round, Proposal, Acceptors, PanelId, Main) of
+  case ballot(Name, Round, Proposal, Acceptors, PanelId) of
     % Consensus, return {Value, Round} 
     {ok, Value} ->
       {Value, Round};
@@ -32,12 +32,12 @@ round(Name, Backoff, Round, Proposal, Acceptors, PanelId, Main) ->
       timer:sleep(rand:uniform(Backoff)),
       % Try again after sleeping, increment round and sleeptime
       Next = order:inc(Round),
-      round(Name, (2*Backoff), Next, Proposal, Acceptors, PanelId, Main)
+      round(Name, (2*Backoff), Next, Proposal, Acceptors, PanelId)
   end.
 
-ballot(Name, Round, Proposal, Acceptors, PanelId, Main) ->
+ballot(Name, Round, Proposal, Acceptors, PanelId) ->
   % Send prepare message with round information
-  prepare(Round, Acceptors, Main),
+  prepare(Round, Acceptors),
   % Necessary votes
   Quorum = (length(Acceptors) div 2) + 1,
   MaxVoted = order:null(),
@@ -49,7 +49,7 @@ ballot(Name, Round, Proposal, Acceptors, PanelId, Main) ->
       % update gui
       PanelId ! {updateProp, "Round: " ++ io_lib:format("~p", [Round]), Value},
       % We got promised, lets ask for votes
-      accept(Round, Value, Acceptors, Main),
+      accept(Round, Value, Acceptors),
       case vote(Quorum, Round) of
         ok ->
           {ok, Value};
@@ -114,17 +114,26 @@ vote(N, Round) ->
     abort
   end.
 
-prepare(Round, Acceptors, Anode) ->
+prepare(Round, Acceptors) ->
   Fun = fun(Acceptor) -> 
-    send(Acceptor, {prepare, self(), Round}, Anode) 
+    send(Acceptor, {prepare, self(), Round}) 
   end,
   lists:foreach(Fun, Acceptors).
 
-accept(Round, Proposal, Acceptors, Anode) ->
+accept(Round, Proposal, Acceptors) ->
   Fun = fun(Acceptor) -> 
-    send(Acceptor, {accept, self(), Round, Proposal}, Anode) 
+    send(Acceptor, {accept, self(), Round, Proposal}) 
   end,
   lists:foreach(Fun, Acceptors).
 
-send(Name, Message, ANode) ->
-       {Name, ANode} ! Message.
+send(Name, Message) ->
+  if is_tuple(Name) -> %remote
+    Name ! Message;
+  true -> %local
+    case whereis(Name) of
+      undefined ->
+        down;
+      Pid ->
+        Pid ! Message
+      end
+  end.

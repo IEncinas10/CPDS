@@ -1,5 +1,5 @@
 -module(gui).
--export([start_acceptors/1, start_proposers/1, make_window_acceptors/2, make_window_proposers/2]).
+-export([start/2]).
 -include_lib("wx/include/wx.hrl").
 
 -define(WindowSize, {450, 420}).
@@ -14,21 +14,14 @@
 -define(AccText1, "Voted: {}").
 -define(AccText2, "Promised: {}").
 
-start_acceptors(Acceptors) ->
+start(Acceptors, Proposers) ->
   % computing panel heights (plus the spacer value)
   AccPanelHeight = length(Acceptors)*?InSizerMinHeight + 10, 
-  State = make_window_acceptors(Acceptors, AccPanelHeight),
-  gui(State).
-
-
-start_proposers(Proposers) ->
-  % computing panel heights (plus the spacer value)
   PropPanelHeight = length(Proposers)*?InSizerMinHeight + 10,
-  State = make_window_proposers(Proposers, PropPanelHeight),
+  State = make_window(Acceptors, Proposers, AccPanelHeight, PropPanelHeight),
   gui(State).
  
-
-make_window_acceptors(Acceptors, AccPanelHeight) ->
+make_window(Acceptors, Proposers, AccPanelHeight, PropPanelHeight) ->
   Server = wx:new(),
   Env = wx:get_env(),
   Frame = wxFrame:new(Server, -1, "Paxos Algorithm", [{size,?WindowSize}]),
@@ -38,6 +31,8 @@ make_window_acceptors(Acceptors, AccPanelHeight) ->
   % create Sizers
   OuterSizer = wxBoxSizer:new(?wxVERTICAL),
   MainSizer = wxBoxSizer:new(?wxHORIZONTAL),
+  ProposerSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, 
+                                       [{label, "Proposers"}]), 
   AcceptorSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, 
                                        [{label, "Acceptors"}]),
 
@@ -49,17 +44,27 @@ make_window_acceptors(Acceptors, AccPanelHeight) ->
       OuterAccSizerHeight = AccPanelHeight
   end,
 
+  case PropPanelHeight > ?OuterSizerMaxHeight of
+    true ->
+      OuterPropSizerHeight = ?OuterSizerMaxHeight;
+    false ->
+      OuterPropSizerHeight = PropPanelHeight
+  end,
 
   wxSizer:setMinSize(AcceptorSizer, ?OuterSizerMinWidth, OuterAccSizerHeight),
+  wxSizer:setMinSize(ProposerSizer, ?OuterSizerMinWidth, OuterPropSizerHeight),
   % add spacers
   wxSizer:addSpacer(MainSizer, 10),  %spacer
+  wxSizer:addSpacer(ProposerSizer, 5),  
   wxSizer:addSpacer(AcceptorSizer, 5),  
 
   % add ProposerSizer into MainSizer
+  wxSizer:add(MainSizer, ProposerSizer,[]),
+  wxSizer:addSpacer(MainSizer, 20),
 
   % add AcceptorSizer into MainSizer
   wxSizer:add(MainSizer, AcceptorSizer,[]),
-  wxSizer:addSpacer(MainSizer, 10),
+  wxSizer:addSpacer(MainSizer, 20),
   wxSizer:addSpacer(OuterSizer, 10),
 
   % add MainSizer into OuterSizer
@@ -70,71 +75,18 @@ make_window_acceptors(Acceptors, AccPanelHeight) ->
 
   % create Acceptors and Proposers Panels
   AccIds = create_acceptors(Acceptors, Panel, AcceptorSizer, Env),
-  wxFrame:show(Frame),
-  {Frame, AccIds}.
-
-
-
-%%TODO hacer split de windows y cambiar llamada funciones en paxy
-make_window_proposers(Proposers, PropPanelHeight) ->
-  Server = wx:new(),
-  Env = wx:get_env(),
-  Frame = wxFrame:new(Server, -1, "Paxos Algorithm", [{size,?WindowSize}]),
-  wxFrame:connect(Frame, close_window),
-  Panel  = wxPanel:new(Frame),
-
-  % create Sizers
-  OuterSizer = wxBoxSizer:new(?wxVERTICAL),
-  MainSizer = wxBoxSizer:new(?wxHORIZONTAL),
-
-  ProposerSizer = wxStaticBoxSizer:new(?wxVERTICAL, Panel, 
-                                       [{label, "Proposers"}]),
-  % set Sizer's min width/height
-
-  case PropPanelHeight > ?OuterSizerMaxHeight of
-    true ->
-      OuterPropSizerHeight = ?OuterSizerMaxHeight;
-    false ->
-      OuterPropSizerHeight = PropPanelHeight
-  end,
-
-  wxSizer:setMinSize(ProposerSizer, ?OuterSizerMinWidth, OuterPropSizerHeight),
-  % add spacers
-  wxSizer:addSpacer(MainSizer, 10),  %spacer
-  wxSizer:addSpacer(ProposerSizer, 5),  
-
-  % add ProposerSizer into MainSizer
-  wxSizer:add(MainSizer, ProposerSizer,[]),
-  wxSizer:addSpacer(MainSizer, 20),
-
-  % add AcceptorSizer into MainSizer
-  % add MainSizer into OuterSizer
-  wxSizer:add(OuterSizer, MainSizer, []),
- 
-  %% Now 'set' OuterSizer into the Panel
-  wxPanel:setSizer(Panel, OuterSizer),
-
-  % create Acceptors and Proposers Panels
   PropIds = create_proposers(Proposers, Panel, ProposerSizer, Env),
 
   wxFrame:show(Frame),
-  {Frame, PropIds}.
-
+  {Frame, AccIds, PropIds}.
 
 gui(State) ->
-  {Frame, Ids} = State,
+  {Frame, AccIds, PropIds} = State,
   receive
     % request State
-    {reqStateProp, From} ->
-
-      io:format("[Gui proposer] state requested ~n"),
-      From ! {reqStateProp, {Ids}},
-      gui(State);
-    
-    {reqStateAcc, From} ->
-
-      io:format("[Gui accpetor] state requested ~n"),
-      From ! {reqStateAcc, {Ids}},
+    {reqState, From} ->
+      io:format("[Gui] state requested ~n"),
+      From ! {reqState, {AccIds, PropIds}},
       gui(State);
     % a connection gets the close_window signal
     % and sends this message to the server
