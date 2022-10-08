@@ -59,16 +59,62 @@
    In this section we will briefly comment the code added to the template version in order to
    make the algorithm work. We will show the minimum number of lines of code possible to follow the reasoning.
 
-  \subsection{Proposer.erl}
+  \subsection{Entry.erl}
 
     \begin{minipage}{.45\textwidth}
 	\begin{lstlisting}[language=erlang, caption={Template}]
-	\end{lstlisting}
+entry(Value, Time) ->
+    receive
+        {read, Ref, From} ->
+            %% TODO: ADD SOME CODE
+            entry(Value, Time);
+        {write, New} ->
+            entry(... , make_ref()); 
+        {check, Ref, Readtime, From} ->
+            if 
+                 ... == ... ->  
+                    %% TODO: ADD SOME CODE
+                true ->
+                    From ! {Ref, abort}
+            end,
+            entry(Value, Time);
+        stop ->
+            ok
+    end.
+ 	\end{lstlisting}
     \end{minipage}\hfill
     \begin{minipage}{.45\textwidth}
 	\begin{lstlisting}[language=erlang, caption={Filled version}]
+entry(Value, Time) ->
+    receive
+        {read, Ref, From} ->
+	    From ! {Ref, self(), Value, Time},
+            entry(Value, Time);
+        {write, New} ->
+            entry(New , make_ref());
+        {check, Ref, Readtime, From} ->
+            if 
+                 Readtime == Time -> 
+		    From ! {Ref, ok};
+                true ->
+                    From ! {Ref, abort}
+            end,
+            entry(Value, Time);
+        stop ->
+            ok
+    end.
 	\end{lstlisting}
     \end{minipage}
+
+In this module we need to complete the \textbf{entry} function. This function is the responsible of the behaviour of the entries. The fuction will receive 3 types of message: read, write and check. 
+
+\begin{itemize}
+  \item  In case it receive a read message we will send a message with \textit{Value}, a timestamp and our PID.
+  \item In case we receive a write message we will just update the \textit{Value}. 
+  \item Finnaly, in case we receive a check messsage, we must compare \textit{Readtime} of the message with our timestamp, if it is the same, we send a ok message (commit), else we send an abort message.
+
+
+\end{itemize}
 
 \clearpage
 \section{Performance}
