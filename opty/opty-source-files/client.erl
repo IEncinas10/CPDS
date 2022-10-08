@@ -8,9 +8,10 @@ open(ClientID, Entries, Reads, Writes, Server, Total, Ok) ->
     Server ! {open, self()},
     receive
         {stop, From} ->
+	    SuccessRate = 100 * Ok / Total,
             io:format("~w: Transactions TOTAL:~w, OK:~w, -> ~w % ~n",
-            [ClientID, Total, Ok, 100*Ok/Total]),
-            From ! {done, self()},
+            [ClientID, Total, Ok, SuccessRate]),
+            From ! {done, self(), SuccessRate},
             ok;
         {transaction, Validator, Store} ->
             Handler = handler:start(self(), Validator, Store),
