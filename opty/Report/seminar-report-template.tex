@@ -103,8 +103,8 @@ entry(Value, Time) ->
         stop ->
             ok
     end.
-	\end{lstlisting}
-    \end{minipage}
+  	\end{lstlisting}
+  \end{minipage}
 
 In this module we need to complete the \textbf{entry} function. This function is the responsible of the behaviour of the entries. The fuction will receive 3 types of message: read, write and check. 
 
@@ -112,9 +112,221 @@ In this module we need to complete the \textbf{entry} function. This function is
   \item  In case it receive a read message we will send a message with \textit{Value}, a timestamp and our PID.
   \item In case we receive a write message we will just update the \textit{Value}. 
   \item Finnaly, in case we receive a check messsage, we must compare \textit{Readtime} of the message with our timestamp, if it is the same, we send a ok message (commit), else we send an abort message.
-
-
 \end{itemize}
+
+
+\subsection{Handler.erl}
+
+  \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Template}]
+handler(Client, Validator, Store, Reads, Writes) ->         
+    receive
+        {read, Ref, N} ->
+            case lists:keyfind(..., ..., ...) of  %% TODO: COMPLETE
+                {N, _, Value} ->
+                    %% TODO: ADD SOME CODE
+                    handler(Client, Validator, Store, Reads, Writes);
+                false ->
+                    %% TODO: ADD SOME CODE
+                    %% TODO: ADD SOME CODE
+                    handler(Client, Validator, Store, Reads, Writes)
+            end;
+        {Ref, Entry, Value, Time} ->
+            %% TODO: ADD SOME CODE HERE AND COMPLETE NEXT LINE
+            handler(Client, Validator, Store, [...|Reads], Writes);
+        {write, N, Value} ->
+            %% TODO: ADD SOME CODE HERE AND COMPLETE NEXT LINE
+            Added = lists:keystore(N, 1, ..., {N, ..., ...}),
+            handler(Client, Validator, Store, Reads, Added);
+        {commit, Ref} ->
+            %% TODO: ADD SOME CODE
+        abort ->
+            ok
+    end.
+ 	\end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Filled version}]
+handler(Client, Validator, Store, Reads, Writes) ->         
+    receive
+        {read, Ref, N} ->
+            case lists:keyfind(N, 1, Writes) of  
+                {N, _, Value} ->
+		    Client ! {value, Ref, Value},
+                    handler(Client, Validator, Store, Reads, Writes);
+                false ->
+		    Entry = store:lookup(N, Store),
+		    Entry ! {read, Ref, self()},
+                    handler(Client, Validator, Store, Reads, Writes)
+            end;
+        {Ref, Entry, Value, Time} ->
+	    Client ! {value, Ref, Value},
+            handler(Client, Validator, Store, [{Entry, Time}|Reads], Writes);
+        {write, N, Value} ->
+	    Entry = store:lookup(N, Store),
+            NewWrites = lists:keystore(N, 1, Writes, {N, Entry, Value}),
+            handler(Client, Validator, Store, Reads, NewWrites);
+        {commit, Ref} ->
+	    Validator ! {validate, Ref, Reads, Writes, Client};
+        abort ->
+            ok
+    end.
+  	\end{lstlisting}
+  \end{minipage}
+
+The next function we need to fil is on Handler module. The \textbf{handler} function expects to receive 4 types of messages: read, reply of entry, write and commit message.
+
+\begin{itemize}
+  \item If the message is read, we need to see if we have already written to this entry before using N, 1 and Writes as parameters for keyfind function. In case that is true, we will send \textit{Value} to the Client. Else, we look for the corresponding N Entry and we send a read message to the handler.
+  \item In case we recieve a reply of an Entry, we need to seend teh reading value of the Entry to the Client. Also we need to add this Read to the Client's Reads.
+  \item If the message is write, we look up for an entry and we need to append or update if existed the entry in our Writes list.
+  \item Last message we can receive is commit. With that message we need to send a validate message to the Validator with with \textit{Ref, Reads, Writes and Client} values.
+\end{itemize}
+
+\clearpage
+\subsection{Validator.erl}
+
+In the validator module we have 3 functions to complete. 
+
+\begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Template}]
+
+validator() ->
+    receive
+        {validate, Ref, Reads, Writes, Client} ->
+            Tag = make_ref(),
+            send_read_checks(..., Tag),  %% TODO: COMPLETE
+            case check_reads(..., Tag) of  %% TODO: COMPLETE
+                ok ->
+                    update(...),  %% TODO: COMPLETE
+                    Client ! {Ref, ok};
+                abort ->
+                    %% TODO: ADD SOME CODE
+            end,
+            validator();
+        stop ->
+            ok;
+        _Old ->
+            validator()
+    end.
+ 	\end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Filled version}]
+
+validator() ->
+    receive
+        {validate, Ref, Reads, Writes, Client} ->
+            Tag = make_ref(),
+            send_read_checks(Reads, Tag),  
+            case check_reads(length(Reads), Tag) of  
+                ok ->
+                    update(Writes),
+                    Client ! {Ref, ok};
+                abort ->
+		    Client ! {Ref, abort}
+            end,
+            validator();
+        stop ->
+            ok;
+        _Old ->
+            validator()
+    end.
+  	\end{lstlisting}
+  \end{minipage}
+
+
+The \textbf{validator} function we wait for a validate message. When we receive that message we need to check the request to every entry we have read and check the results.
+
+\begin{itemize}
+  \item In case the case the transaction is OK, we flush writes and finish with a ok message to the Client.
+  \item In case we read stale data, we send to the Client an abort message.
+\end{itemize}
+
+\begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Template}]
+
+update(Writes) ->
+    lists:foreach(fun({_, Entry, Value}) -> 
+                  %% TODO: ADD SOME CODE
+                  end, 
+                  Writes).
+ 	\end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Filled version}]
+
+update(Writes) ->
+    lists:foreach(fun({_, Entry, Value}) -> 
+		  % Update each entry in our Writes
+		  Entry ! {write, Value}
+                  end, 
+                  Writes).
+  	\end{lstlisting}
+  \end{minipage}
+
+
+  The next fuction to complete is \textbf{update}. In this fuction we need to send a write message to Entry with the corresponding Value.
+
+
+\begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Template}]
+send_read_checks(Reads, Tag) ->
+    Self = self(),
+    lists:foreach(fun({Entry, Time}) -> 
+                  %% TODO: ADD SOME CODE
+                  end, 
+                  Reads).
+ 	\end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Filled version}]
+
+send_read_checks(Reads, Tag) ->
+    Self = self(),
+    lists:foreach(fun({Entry, Time}) -> 
+		  Entry ! {check, Tag, Time, Self}
+                  end, 
+                  Reads).
+  	\end{lstlisting}
+  \end{minipage}
+
+Last function is \textbf{send\_read\_checks}. In this function we send to the Entry a check message with the Tag and Time for each existing Entry.
+
+\clearpage
+
+\subsection{Server.erl}
+
+\begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Template}]
+server(Validator, Store) ->
+    receive 
+        {open, Client} ->
+            %% TODO: ADD SOME CODE
+            server(Validator, Store);
+        stop ->
+            Validator ! stop,
+            store:stop(Store)
+    end.
+ 	\end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Filled version}]
+
+server(Validator, Store) ->
+    receive 
+        {open, Client} ->
+	    % Send client the Validator and Store
+	    Client ! {transaction, Validator, Store},
+            server(Validator, Store);
+        stop ->
+            Validator ! stop,
+            store:stop(Store)
+    end.
+  	\end{lstlisting}
+  \end{minipage}
+
+  The last module we have to modify is \textbf{server}. In this case \textit{server} function is waiting for open message. When we receive that message, we send to the Client the Validator and Store for the transaction.
 
 \clearpage
 \section{Performance}
