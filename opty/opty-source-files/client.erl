@@ -58,6 +58,3 @@ do_commit(Handler) ->
     receive
         {Ref, Value} -> Value
     end.
-
-
-    
