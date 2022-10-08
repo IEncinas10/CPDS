@@ -34,11 +34,12 @@ stopClients([Pid|L]) ->
     stopClients(L).
 
 waitClients([], SuccessRates) ->
-    SuccessRate = lists:foldl(fun(X, Prod) -> X * Prod end, 1, SuccessRates),
-    io:format("Geomean success rate: ~w~n", [nth_root(length(SuccessRates), SuccessRate)]),
-    Stddev = stddev(SuccessRates),
-    io:format("Stddev of success rate: ~w~n", [Stddev]),
-    SuccessRate;
+    N = length(SuccessRates),
+    Sum = lists:foldl(fun(X, Sum) -> X + Sum end, 0, SuccessRates),
+    Mean = Sum / N,
+    io:format("Mean success rate: ~w~n", [Mean]),
+    Stddev = stddev(SuccessRates, Mean),
+    io:format("Stddev of success rate: ~w~n", [Stddev]);
 waitClients(L, SuccessRate) ->
     receive
         {done, Pid, ProcSuccessRate} ->
@@ -46,24 +47,8 @@ waitClients(L, SuccessRate) ->
     end.
 
 
-stddev(ListofNumbers) ->
+stddev(ListofNumbers, Mean) ->
     N = length(ListofNumbers),
-    Sum = lists:foldl(fun(X, Sum) -> X + Sum end, 0, ListofNumbers),
-    Mean = Sum / N,
     {Tmp, Basura} = lists:foldl(fun(X, ErlangDaAsco) -> {Sum_, Mean_} = ErlangDaAsco, {Sum_ + math:pow(X-Mean_, 2), Mean_} end, {0, Mean}, ListofNumbers),
     Tmp2 = Tmp / N,
     math:sqrt(Tmp2).
-
-%https://rosettacode.org/wiki/Nth_root#Erlang
-nth_root(N, X) -> nth_root(N, X, 1.0e-5).
-nth_root(N, X, Precision) ->
-    F = fun(Prev) -> ((N - 1) * Prev + X / math:pow(Prev, (N-1))) / N end,
-    fixed_point(F, X, Precision).
-
-fixed_point(F, Guess, Tolerance) ->
-    fixed_point(F, Guess, Tolerance, F(Guess)).
-fixed_point(_, Guess, Tolerance, Next) when abs(Guess - Next) < Tolerance ->
-    Next;
-fixed_point(F, _, Tolerance, Next) ->
-    fixed_point(F, Next, Tolerance, F(Next)).
-
