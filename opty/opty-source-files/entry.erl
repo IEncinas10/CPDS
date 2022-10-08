@@ -10,9 +10,12 @@ init(Value) ->
 entry(Value, Time) ->
     receive
         {read, Ref, From} ->
+	    % We respond to the handler. 
+	    % Value + {self(), Time} for checking
 	    From ! {Ref, self(), Value, Time},
             entry(Value, Time);
         {write, New} ->
+	    % We just update the value and the Time/Ref
             entry(New , make_ref());
         {check, Ref, Readtime, From} ->
             if 

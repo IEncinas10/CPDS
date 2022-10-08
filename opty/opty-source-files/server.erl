@@ -12,6 +12,7 @@ init(N) ->
 server(Validator, Store) ->
     receive 
         {open, Client} ->
+	    % Send client the Validator and Store
 	    Client ! {transaction, Validator, Store},
             server(Validator, Store);
         stop ->
