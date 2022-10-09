@@ -20,9 +20,14 @@
 	]
 
 	\addplot[mark=*, mark size=1pt, black, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numentries/clean};	
-	\addlegendentry{2 Clients, 1 Read, 1 Write, 4sec};
+	\addlegendentry{Timey: 2 Clients, 1 Read, 1 Write, 4sec};
 	\addplot[mark=*, mark size=1pt, blue, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numentries2/clean};	
-	\addlegendentry{2 Clients, 3 Read, 3 Write, 4sec};
+	\addlegendentry{Timey: 2 Clients, 3 Read, 3 Write, 4sec};
+
+	    \addplot[mark=*, mark size=1pt, orange, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../../opty-source-files/numentries/clean};	
+	\addlegendentry{Opty: 2 Clients, 1 Read, 1 Write, 4sec};
+	    \addplot[mark=*, mark size=1pt, green, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../../opty-source-files/numentries2/clean};	
+	\addlegendentry{Opty: 2 Clients, 3 Read, 3 Write, 4sec};
 
 	
         %\addplot[black, thick, samples=50, domain=0:5000] {20000};

@@ -16,11 +16,14 @@
 	    ylabel=Mean success rate (\%),
 	    xmin=0.5,xmax=20.5, % <-- added here to preserve view
 	    ymin=55,ymax=100,
-	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=2}
+	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=1}
 	]
 
 	\addplot[mark=*, mark size=1pt, black, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numreads/clean};	
-	\addlegendentry{2 Clients, 10 Entries, 1 Write, 4sec};
+	\addlegendentry{Timey: 2 Clients, 10 Entries, 1 Write, 4sec};
+
+	\addplot[mark=*, mark size=1pt, orange, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../../opty-source-files/numreads/clean};	
+	\addlegendentry{Opty: 2 Clients, 10 Entries, 1 Write, 4sec};
 	
         %\addplot[black, thick, samples=50, domain=0:5000] {20000};
         %\addlegendentry{Did not finish}

@@ -20,7 +20,10 @@
 	]
 
 	\addplot[mark=*, mark size=1pt, black, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../readratio/clean};	
-	\addlegendentry{2 Clients, 10 Entries, 10 Ops, 4sec};
+	\addlegendentry{Timey: 2 Clients, 10 Entries, 10 Ops, 4sec};
+
+	\addplot[mark=*, mark size=1pt, orange, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../../opty-source-files/readratio/clean};	
+	\addlegendentry{Opty: 2 Clients, 10 Entries, 10 Ops, 4sec};
 
 	
         %\addplot[black, thick, samples=50, domain=0:5000] {20000};
