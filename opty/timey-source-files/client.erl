@@ -10,7 +10,8 @@ open(ClientID, Entries, Reads, Writes, Server, Total, Ok) ->
         {stop, From} ->
             io:format("~w: Transactions TOTAL:~w, OK:~w, -> ~w % ~n",
             [ClientID, Total, Ok, 100*Ok/Total]),
-            From ! {done, self()},
+	    SuccessRate = 100 * Ok / Total,
+            From ! {done, self(), SuccessRate},
             ok;
         {transaction, Time, Store} ->
             Tref = make_ref(),

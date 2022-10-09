@@ -17,7 +17,7 @@ start(Clients, Entries, Reads, Writes, Time) ->
 stop(L) ->
     io:format("Stopping...~n"),
     stopClients(L),
-    waitClients(L),
+    waitClients(L, []),
     s ! stop,
     io:format("Stopped~n").
 
@@ -32,10 +32,23 @@ stopClients([Pid|L]) ->
     Pid ! {stop, self()},	
     stopClients(L).
 
-waitClients([]) ->
-    ok;
-waitClients(L) ->
+waitClients([], SuccessRates) ->
+    N = length(SuccessRates),
+    Sum = lists:foldl(fun(X, Sum) -> X + Sum end, 0, SuccessRates),
+    Mean = Sum / N,
+    io:format("Mean success rate: ~w~n", [Mean]),
+    Stddev = stddev(SuccessRates, Mean),
+    io:format("Stddev of success rate: ~w~n", [Stddev]);
+waitClients(L, SuccessRate) ->
     receive
-        {done, Pid} ->
-            waitClients(lists:delete(Pid, L))
+        {done, Pid, ProcSuccessRate} ->
+            waitClients(lists:delete(Pid, L), [ProcSuccessRate | SuccessRate])
     end.
+
+
+stddev(ListofNumbers, Mean) ->
+    N = length(ListofNumbers),
+    {Tmp, Basura} = lists:foldl(fun(X, ErlangDaAsco) -> {Sum_, Mean_} = ErlangDaAsco, {Sum_ + math:pow(X-Mean_, 2), Mean_} end, {0, Mean}, ListofNumbers),
+    Tmp2 = Tmp / N,
+    math:sqrt(Tmp2).
+
