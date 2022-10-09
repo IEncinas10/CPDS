@@ -258,7 +258,6 @@ update(Writes) ->
 
 update(Writes) ->
     lists:foreach(fun({_, Entry, Value}) -> 
-		  % Update each entry in our Writes
 		  Entry ! {write, Value}
                   end, 
                   Writes).
@@ -316,7 +315,6 @@ server(Validator, Store) ->
 server(Validator, Store) ->
     receive 
         {open, Client} ->
-	    % Send client the Validator and Store
 	    Client ! {transaction, Validator, Store},
             server(Validator, Store);
         stop ->
