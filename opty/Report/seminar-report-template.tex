@@ -339,7 +339,7 @@ We have used a bash script to run simulations as extensive as possible. It is wo
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{plots/numclients.pdf}
-    \caption{}
+    \caption{Success rate w.r.t nº of clients}
     \label{fig:numclients}
 \end{figure} 
 
@@ -350,7 +350,7 @@ We have used a bash script to run simulations as extensive as possible. It is wo
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{plots/numentries.pdf}
-    \caption{}
+    \caption{Success rate w.r.t nº of entries}
     \label{fig:numentries}
 \end{figure} 
 
@@ -360,7 +360,7 @@ We have used a bash script to run simulations as extensive as possible. It is wo
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{plots/numreads.pdf}
-    \caption{}
+    \caption{Success rate w.r.t nº of reads}
     \label{fig:numreads}
 \end{figure} 
 
@@ -370,7 +370,7 @@ We have used a bash script to run simulations as extensive as possible. It is wo
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{plots/numwrites.pdf}
-    \caption{}
+    \caption{Success rate w.r.t nº of writes}
     \label{fig:numwrites}
 \end{figure} 
 
@@ -380,7 +380,7 @@ We have used a bash script to run simulations as extensive as possible. It is wo
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{plots/ratio.pdf}
-    \caption{}
+    \caption{Success rate w.r.t ratio of reads/writes with fixed amount of total operations}
     \label{fig:ratio}
 \end{figure} 
 
@@ -398,6 +398,58 @@ no entiendo
 
 \clearpage
 \section{Other concurrency control techniques}
+
+
+\subsection{Number of concurrent clients in the system}
+\label{sec:numclients}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{timey_plots/numclients.pdf}
+    \caption{Success rate w.r.t nº of clients}
+    \label{fig:numclients}
+\end{figure} 
+
+
+\subsection{Number of entries in the store}
+\label{sec:numentries}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{timey_plots/numentries.pdf}
+    \caption{Success rate w.r.t nº of entries}
+    \label{fig:numentries}
+\end{figure} 
+
+\subsection{Number of reads per transaction}
+\label{sec:numreads}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{timey_plots/numreads.pdf}
+    \caption{Success rate w.r.t nº of reads}
+    \label{fig:numreads}
+\end{figure} 
+
+\subsection{Number of writes per transaction}
+\label{sec:numwrites}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{timey_plots/numwrites.pdf}
+    \caption{Success rate w.r.t nº of writes}
+    \label{fig:numwrites}
+\end{figure} 
+
+\subsection{Ratio of read/writes}
+\label{sec:ratioreadwrites}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{timey_plots/ratio.pdf}
+    \caption{Success rate w.r.t ratio of reads/writes with fixed amount of total operations}
+    \label{fig:ratio}
+\end{figure} 
 
 \clearpage
 \section{Personal opinion}
