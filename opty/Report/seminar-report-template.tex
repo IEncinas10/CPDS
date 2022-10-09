@@ -333,23 +333,56 @@ server(Validator, Store) ->
 
 We have used a bash script to run simulations as extensive as possible. It is worth noting that results might contain hidden effects resultant of the specific hardware conditions among other things, and thats why we believe solid conclusions cannot be reached in many cases.
 
-\subsection{Number of concurrenct clients in the system}
+\subsection{Number of concurrent clients in the system}
 \label{sec:numclients}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{plots/numclients.pdf}
+    \caption{}
+    \label{fig:numclients}
+\end{figure} 
+
 
 \subsection{Number of entries in the store}
 \label{sec:numentries}
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{plots/numentries.pdf}
+    \caption{}
+    \label{fig:numentries}
+\end{figure} 
+
 \subsection{Number of reads per transaction}
 \label{sec:numreads}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{plots/numreads.pdf}
+    \caption{}
+    \label{fig:numreads}
+\end{figure} 
 
 \subsection{Number of writes per transaction}
 \label{sec:numwrites}
 
-\subsection{Ratio of read/writes}
-\label{sec:ratioreadwrites}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{plots/numwrites.pdf}
+    \caption{}
+    \label{fig:numwrites}
+\end{figure} 
 
 \subsection{Ratio of read/writes}
 \label{sec:ratioreadwrites}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{plots/ratio.pdf}
+    \caption{}
+    \label{fig:ratio}
+\end{figure} 
 
 \subsection{Different percentage of accessed entries w.r.t the total number of entries}
 \label{sec:nose}
