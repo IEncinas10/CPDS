@@ -17,7 +17,7 @@ sample(Entries, S) ->
 start(ClientID, Entries, Reads, Writes, Server) ->
     spawn(fun() -> 
 	      P = getsubsetpercentage(),
-	      SubEntries = P * Entries,
+	      SubEntries = trunc(P * Entries),
 	      io:format("Percentage: ~w. Entries: ~w, SubEntries: ~w~n", [P, Entries, P*Entries]),
 	      SubSetList = sample(Entries, SubEntries), 
 	      io:format("[~w] SubSetList: ~w~n", [ClientID, SubSetList]),

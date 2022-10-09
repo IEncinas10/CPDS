@@ -1,8 +1,27 @@
 -module(client).
 -export([start/5]).
 
+%% StoreSubset: Size of the subset of stores that will be accessed (%)
+
+-define(default_store_subset_percentage, 1).
+getsubsetpercentage() ->
+    Val = os:getenv("subset_percentage"),
+    case Val of
+	false -> ?default_store_subset_percentage;
+	_ -> N = list_to_float(Val), N
+    end.
+
+sample(Entries, S) ->
+    lists:sublist([X || {_ ,X} <- lists:sort([{rand:uniform(), E} || E <- lists:seq(1, Entries)])], S).
+
 start(ClientID, Entries, Reads, Writes, Server) ->
-    spawn(fun() -> open(ClientID, Entries, Reads, Writes, Server, 0, 0) end).
+    spawn(fun() -> 
+	      P = getsubsetpercentage(),
+	      SubEntries = trunc(P * Entries),
+	      io:format("Percentage: ~w. Entries: ~w, SubEntries: ~w~n", [P, Entries, P*Entries]),
+	      SubSetList = sample(Entries, SubEntries), 
+	      io:format("[~w] SubSetList: ~w~n", [ClientID, SubSetList]),
+	      open(ClientID, SubSetList, Reads, Writes, Server, 0, 0) end).
 
 open(ClientID, Entries, Reads, Writes, Server, Total, Ok) ->
     Server ! {open, self()},
@@ -60,7 +79,9 @@ do_transaction(ClientID, Entries, Reads, Writes, Handler, Tref) ->
 
 do_read(Entries, Handler, Tref) ->
     Ref = make_ref(),
-    Num = rand:uniform(Entries),
+    Index = rand:uniform(length(Entries)),
+    Num = lists:nth(Index, Entries),
+    %Num = rand:uniform(Entries),
     Handler ! {read, Ref, Num},
     receive
         {value, Ref, {ok, Value}} -> 
@@ -71,7 +92,9 @@ do_read(Entries, Handler, Tref) ->
 
 do_write(Entries, Handler, Value, Tref) ->
     Ref = make_ref(), 
-    Num = rand:uniform(Entries),
+    Index = rand:uniform(length(Entries)),
+    Num = lists:nth(Index, Entries),
+    %Num = rand:uniform(Entries),
     Handler ! {write, Ref, Num, Value},
     receive
         {value, Ref, ok} ->
