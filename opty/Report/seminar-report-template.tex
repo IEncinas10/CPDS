@@ -329,10 +329,14 @@ server(Validator, Store) ->
 \clearpage
 \section{Performance}
 
-We have used a bash script to run simulations as extensive as possible. It is worth noting that results might contain hidden effects resultant of the specific hardware conditions among other things, and thats why we believe solid conclusions cannot be reached in many cases.
+We have used a shell script to automatize the testing and make the results easily reproducible. Every plot shows error bars for every point, but they are so small that they are not noticeable in most cases.
+
+As indicated by the assignment we've tried to pick free parameters for each test in a way that lets us see the effect of the parameter under study. 
 
 \subsection{Number of concurrent clients in the system}
 \label{sec:numclients}
+
+Increasing the number of clients makes it easier for them to clash, so it decreases the mean success rate pretty fast.
 
 \begin{figure}[H]
   \centering
@@ -342,9 +346,13 @@ We have used a bash script to run simulations as extensive as possible. It is wo
 \end{figure} 
 
 
+
+\clearpage
 \subsection{Number of entries in the store}
 \label{sec:numentries}
+This is perhaps the most tricky parameter of our system. It shows extremely complex behaviour for some corner cases.
 
+On the other hand, it is also true that our intuition holds for the majority of cases. That is, whenever $\text{entries} \gg \text{clients}$. Increasing the number of entries decreases the possibility of conflict, so it increases the success rate.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{plots/numentries.pdf}
@@ -352,8 +360,10 @@ We have used a bash script to run simulations as extensive as possible. It is wo
     \label{fig:numentries}
 \end{figure} 
 
+\clearpage
 \subsection{Number of reads per transaction}
 \label{sec:numreads}
+Doing more reads makes it easier for other clients to update those entries we've used and invalidate our transactions.
 
 \begin{figure}[H]
   \centering
@@ -362,8 +372,10 @@ We have used a bash script to run simulations as extensive as possible. It is wo
     \label{fig:numreads}
 \end{figure} 
 
+\clearpage
 \subsection{Number of writes per transaction}
 \label{sec:numwrites}
+Doing more writes increases the probability of updating an entry that had been previously read by other transaction that had not finished before we commited, so it decreases the success rate.
 
 \begin{figure}[H]
   \centering
@@ -372,8 +384,11 @@ We have used a bash script to run simulations as extensive as possible. It is wo
     \label{fig:numwrites}
 \end{figure} 
 
+\clearpage
 \subsection{Ratio of read/writes}
 \label{sec:ratioreadwrites}
+
+The conflicts appear whenever we read outdated data, so having very one sided transactions will result in almost no conflicts. The success rate decreases rapidly whenever we have a balanced transaction that performs both operations.
 
 \begin{figure}[H]
   \centering
@@ -384,8 +399,7 @@ We have used a bash script to run simulations as extensive as possible. It is wo
 
 \subsection{Different percentage of accessed entries w.r.t the total number of entries}
 \label{sec:nose}
-no entiendo
-
+A small percentage of accessed entries obviously increases our success rate, as the possibility for conflict is lower. It is also worth noting that this also introduces high variability on the success rate as some clients will access very crowded subsets while others will not.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{plots/subset.pdf}
@@ -395,9 +409,33 @@ no entiendo
 
 
 \subsection{What is the impact of each of these parameters on the success rate?}
+Increasing the number of clients, reads and writes reduces the success rate, while increasing the number of entries increases it.
+
+The results are very intuitive, because more complex transactions have higher probability of conflicting with others by reading entries that have been written.
+
+
+On the other hand, there are some special cases where this intuition falls apart such as the one examined at Section \ref{sec:magia}. Results at Section \ref{sec:numentries} also indicate that adding entries can decrease the success rate for a low count of clients that perform complex transactions.
+
 
 \subsection{Is the success rate the same for the different clients?}
+In every plot we show the standard deviation via error bars. They're so small it's difficult to see them, so mainly yes. The only where the clients get different success rates is in the one where they get a subset of accessed entries. It's expected as some clients will get subsets with very little \textit{traffic}, and other clients will compete with many others to access the same entries.
 
+\clearpage
+\subsection{Bonus. Minimum success rate per number of entries}
+\label{sec:magia}
+At first we can think that as we increase the number of clients the success rate will go to $0$. It's not such a wild idea but if we think carefully we'll notice that there is a pattern in our transactions that always succeeds: $\text{Write} \rightarrow \text{Read}$. This gives us a lower bound on the amount of transactions that will succeed, as shown in Figure \ref{fig:magia}. In the simple case we've studied, in the $50\%$ of cases our transaction will be a write followed by a read. In order for it to succeed, the read will have to access the entry we've previously written, so the probability of doing so is $\frac{1}{n}$, where $n$ is the number of entries.
+
+Obviously as the transaction complexity increases the calculation required to obtain this lower bound does too so we can't go much further, but surely anyone skilled enough in combinatorics could.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{plots/numentriesv2.pdf}
+    \caption{Success rate w.r.t nº of clients and entries}
+    \label{fig:magia}
+\end{figure} 
+
+This also helps explain the situation where adding entries does decrease the mean success rate. It's very unintuitive but considering this lower bound makes it much more obvious. When $\text{clients} \gg \text{entries}$ the conflicts will be unavoidable so the success rate will be very close to the lower bound, and increasing the number of entries decreases that lower bound.
+
+Obviously this is sort of a patological example and is not representative. Surely the lower bound for any realistic transaction is so small that this effect does not matter at all. Other practical factors such as server load and network contention should be also be considered.
 \clearpage
 \section{Distributed execution}
 
@@ -406,65 +444,58 @@ no entiendo
 
 
 \subsection{Number of concurrent clients in the system}
-\label{sec:numclients}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{timey_plots/numclients.pdf}
     \caption{Success rate w.r.t nº of clients}
-    \label{fig:numclients}
+    \label{timey:numclients}
 \end{figure} 
 
 
 \subsection{Number of entries in the store}
-\label{sec:numentries}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{timey_plots/numentries.pdf}
     \caption{Success rate w.r.t nº of entries}
-    \label{fig:numentries}
+    \label{timey:numentries}
 \end{figure} 
 
 \subsection{Number of reads per transaction}
-\label{sec:numreads}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{timey_plots/numreads.pdf}
     \caption{Success rate w.r.t nº of reads}
-    \label{fig:numreads}
+    \label{timey:numreads}
 \end{figure} 
 
 \subsection{Number of writes per transaction}
-\label{sec:numwrites}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{timey_plots/numwrites.pdf}
     \caption{Success rate w.r.t nº of writes}
-    \label{fig:numwrites}
+    \label{timey:numwrites}
 \end{figure} 
 
 \subsection{Ratio of read/writes}
-\label{sec:ratioreadwrites}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{timey_plots/ratio.pdf}
     \caption{Success rate w.r.t ratio of reads/writes with fixed amount of total operations}
-    \label{fig:ratio}
+    \label{timey:ratio}
 \end{figure} 
 
 \subsection{Different percentage of accessed entries w.r.t the total number of entries}
-\label{sec:nose}
-no entiendo
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{timey_plots/subset.pdf}
     \caption{Success rate w.r.t percentage of Entries accessible by each client}
-    \label{fig:subset}
+    \label{timey:subset}
 \end{figure} 
 
 \clearpage

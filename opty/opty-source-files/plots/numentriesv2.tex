@@ -5,27 +5,44 @@
 \usepgfplotslibrary{fillbetween}
 \usetikzlibrary{patterns}
 \pgfplotsset{compat=1.10}
+%\pgfplotsset{cycle list shift=1}
+
+\newcommand{\kMAX}{6}
 
 \begin{document}
     \begin{tikzpicture}
 	\begin{axis}[
 	    width=\textwidth,
 	    %height=0.55\textwidth,
-	    xlabel=Entries,
+	    xlabel=Clients,
 	    grid=major,
 	    ylabel=Mean success rate (\%),
-	    xmin=0.5,xmax=101.5, % <-- added here to preserve view
-	    ymin=25,ymax=100,
-	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=1}
+	    %xmin=0.5,xmax=1024.5, % <-- added here to preserve view
+	    %ymin=0,ymax=100,
+	    %cycle list,
+	    %cycle list name=exotic,
+	    cycle multi list={%
+		color list\nextlist
+		[1 of]mark list
+	    },
+	    title={1 Read, 1 Write, 4sec},
+	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=2}
 	]
 
-	\addplot[mark=*, mark size=1pt, black, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numentries/clean};	
-	\addlegendentry{2 Clients, 1 Read, 1 Write, 4sec};
-	\addplot[mark=*, mark size=1pt, blue, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numentries2/clean};	
-	\addlegendentry{2 Clients, 3 Read, 3 Write, 4sec};
+	%\addplot[mark=*, mark size=1pt, black, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numclients3/clean_1};	
+	%\addlegendentry{2 Clients, 1 Read, 1 Write, 4sec};
 
-	\addplot[mark=*, mark size=1pt, red, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numentries3/clean};	
-	\addlegendentry{2 Clients, 10 Read, 10 Write, 4sec};
+
+
+	\foreach \k in {1, ..., \kMAX} 
+	{
+
+	    \addplot+[mark=*, mark size=1pt, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numclients3/clean_\k};	
+	    \expandafter\addlegendentry\expandafter{\k \ Entries};
+	    \addplot+[smooth,mark=square, black, nodes near coords, nodes near coords align=horizontal, nodes near coords style={font=\tiny}, forget plot] coordinates {(1024, 50/\k)};
+	    %\expandafter\addlegendentry\expandafter{\k};
+	    %\expandafter\addlegendentry\expandafter{\tmp};
+	}
 
 	
         %\addplot[black, thick, samples=50, domain=0:5000] {20000};
