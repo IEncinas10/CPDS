@@ -12,16 +12,21 @@ validator() ->
         {validate, Ref, Reads, Writes, Client} ->
             Tag = make_ref(),
 	    % Send check request to every entry we've read
-            send_read_checks(Reads, Tag),  
+            send_write_check(Writes),  %% modify to check_writes
 	    % Process the result
-            case check_reads(length(Reads), Tag) of  
+            case check_writes(length(Writes)) of  
                 ok ->
 		    % Transaction OK, flush writes and finish
                     update(Writes),
                     Client ! {Ref, ok};
                 abort ->
 		    % Transaction read stale data, abort
-		    Client ! {Ref, abort}
+                  lists:foreach(fun(Entry) -> 
+                  Entry ! {delete, self()}
+                          end,
+                          Writes),
+
+		              Client ! {Ref, abort}
             end,
             validator();
         stop ->
@@ -36,6 +41,29 @@ update(Writes) ->
 		  Entry ! {write, Value}
                   end, 
                   Writes).
+
+
+%%TODO create send_write_check
+
+
+send_write_check(Writes) ->
+    Self = self(),
+    lists:foreach(fun(Entry) -> 
+    Entry ! {check, Self}
+          end,
+          Writes).
+
+check_writes(0) ->
+  ok;
+
+check_writes(N) ->
+  receive
+    ok ->
+      check_writes(N-1);
+    abort ->
+      abort
+  end.
+
 
 send_read_checks(Reads, Tag) ->
     Self = self(),

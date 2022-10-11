@@ -25,11 +25,11 @@ handler(Client, Validator, Store, Reads, Writes) ->
 		    Entry ! {read, Ref, self()},
                     handler(Client, Validator, Store, Reads, Writes)
             end;
-        {Ref, Entry, Value, Time} ->
+        {Ref, Entry, Value} ->
 	    % We got the reading value, send it to Client
 	    Client ! {value, Ref, Value},
 	    % Also, add this Read to the Client's Reads
-            handler(Client, Validator, Store, [{Entry, Time}|Reads], Writes);
+            handler(Client, Validator, Store, [Entry | Reads], Writes);
         {write, N, Value} ->
 	    % Find Entry
 	    Entry = store:lookup(N, Store),

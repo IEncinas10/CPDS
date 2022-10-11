@@ -5,26 +5,31 @@ new(Value) ->
     spawn_link(fun() -> init(Value) end).
 
 init(Value) ->
-    entry(Value, make_ref()).
+    entry(Value, []).
 
-entry(Value, Time) ->
+entry(Value, ListReads) -> %% TIME NOT NEEDED modify all related code with time
     receive
         {read, Ref, From} ->
-	    % We respond to the handler. 
-	    % Value + {self(), Time} for checking
-	    From ! {Ref, self(), Value, Time},
-            entry(Value, Time);
-        {write, New} ->
+            %%TODO  crear lista con las lecturas
+            NewListReads = lists:append(ListReads, [From]),
+	          From ! {Ref, self(), Value},
+            entry(Value, NewListReads);
+        {write, Ref, New} ->
 	    % We just update the value and the Time/Ref
-            entry(New , make_ref());
-        {check, Ref, Readtime, From} ->
+            entry(New, ListReads);
+        {check, Ref, From} -> %Modify how that is comprobed, look on the list of read if there is other PID (From)
+
+            FilteredList = lists:filter(fun(X)-> X /= From end, ListReads),
             if 
-                 Readtime == Time -> 
-		    From ! {Ref, ok};
+                 FilteredList == [] -> 
+		                From ! {Ref, ok};
                 true ->
                     From ! {Ref, abort}
             end,
-            entry(Value, Time);
+            entry(Value, ListReads);
+        {delete, From} ->
+            FilteredList = lists:filter(fun(X)-> X /= From end, ListReads),
+            entry(Value, FilteredList);
         stop ->
             ok
     end.
