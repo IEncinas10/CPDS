@@ -439,6 +439,40 @@ Obviously this is sort of a patological example and is not representative. Surel
 \clearpage
 \section{Distributed execution}
 
+For this experiment we have made a few changes in order to be able to generate a process in other node from one unique start function. The changes have been done in \textit{opty} module. 
+
+In order to be able to call the distributed server we have to register it and have it in the client side. We have used the piece of code from listing \ref{list:register}
+
+
+\begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=erlang, caption={Register Distributed Server}]
+    spawn(Snode, fun() -> 
+                         register(s, server:start(Entries))end),
+ 	\end{lstlisting}
+  \label{list:register}
+    \end{minipage}
+
+In the figures \ref{fig:2nodes}-\ref{fig:1node} it is shown the execution of the distributed algorithm. In the first one, we can see 2 nodes, in which we run clientside and serverside. In the left terminal, it is shown that \texttt{s} is created in server node and the start function is executed in the client node. 
+
+Also, to show the correct behaviour, in the figure \ref{fig:1node} the server node is down and we are not able to spawn the server in that node, so the algorithm does not work.
+
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{images/optyWorking.png}
+    \caption{Opty working in 2 nodes}
+    \label{fig:2nodes}
+\end{figure} 
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{images/opty1node.png}
+    \caption{Opty failing with 1 node}
+    \label{fig:1node}
+\end{figure} 
+
 \clearpage
 \section{Other concurrency control techniques}
 
