@@ -18,6 +18,7 @@ start(Clients, Entries, Reads, Writes, Time) ->
 stop(L) ->
     io:format("Stopping...~n"),
     stopClients(L),
+    io:format("waiting for data...~n"),
     waitClients(L, []),
     s ! stop,
     io:format("Stopped~n").

@@ -21,7 +21,7 @@ validator() ->
                     Client ! {Ref, ok};
                 abort ->
 		    % Transaction read stale data, abort
-                  lists:foreach(fun(Entry) -> 
+                  lists:foreach(fun({_, Entry, Value}) -> 
                   Entry ! {delete, self()}
                           end,
                           Writes),
@@ -48,7 +48,7 @@ update(Writes) ->
 
 send_write_check(Writes) ->
     Self = self(),
-    lists:foreach(fun(Entry) -> 
+    lists:foreach(fun({_, Entry, Value}) -> 
     Entry ! {check, Self}
           end,
           Writes).
@@ -58,9 +58,9 @@ check_writes(0) ->
 
 check_writes(N) ->
   receive
-    ok ->
+    {_ ,ok} ->
       check_writes(N-1);
-    abort ->
+    {_ , abort} ->
       abort
   end.
 

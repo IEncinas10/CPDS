@@ -16,28 +16,29 @@ handler(Client, Validator, Store, Reads, Writes) ->
             case lists:keyfind(N, 1, Writes) of  
                 {N, _, Value} ->
 		    % Send THIS value to the Client
-		    Client ! {value, Ref, Value},
+		                Client ! {value, Ref, Value},
                     handler(Client, Validator, Store, Reads, Writes);
                 false ->
 		    % Find the corresponding Entry
-		    Entry = store:lookup(N, Store),
+		                Entry = store:lookup(N, Store),
 		    % Request value to entry
-		    Entry ! {read, Ref, self()},
+		                Entry ! {read, Ref, self()},
                     handler(Client, Validator, Store, Reads, Writes)
             end;
-        {Ref, Entry, Value} ->
-	    % We got the reading value, send it to Client
-	    Client ! {value, Ref, Value},
-	    % Also, add this Read to the Client's Reads
-            handler(Client, Validator, Store, [Entry | Reads], Writes);
+
         {write, N, Value} ->
 	    % Find Entry
-	    Entry = store:lookup(N, Store),
+	          Entry = store:lookup(N, Store),
 	    % Append (or update if existed) the entry in our Writes list
             NewWrites = lists:keystore(N, 1, Writes, {N, Entry, Value}),
             handler(Client, Validator, Store, Reads, NewWrites);
         {commit, Ref} ->
-	    Validator ! {validate, Ref, Reads, Writes, Client};
+	          Validator ! {validate, Ref, Reads, Writes, Client};
+        {Ref, Entry, Value} ->
+	    % We got the reading value, send it to Client
+	          Client ! {value, Ref, Value},
+	    % Also, add this Read to the Client's Reads
+            handler(Client, Validator, Store, [Entry | Reads], Writes);
         abort ->
             ok
     end.

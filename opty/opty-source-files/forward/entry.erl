@@ -15,15 +15,16 @@ entry(Value, ListReads) -> %% TIME NOT NEEDED modify all related code with time
 	          From ! {Ref, self(), Value},
             entry(Value, NewListReads);
         {write, Ref, New} ->
-	    % We just update the value and the Time/Ref
+	          % We just update the value and the Time/Ref
             entry(New, ListReads);
         {check, Ref, From} -> %Modify how that is comprobed, look on the list of read if there is other PID (From)
 
             FilteredList = lists:filter(fun(X)-> X /= From end, ListReads),
             if 
                  FilteredList == [] -> 
+                
 		                From ! {Ref, ok};
-                true ->
+                false ->
                     From ! {Ref, abort}
             end,
             entry(Value, ListReads);
