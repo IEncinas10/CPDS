@@ -534,7 +534,7 @@ Doing more writes per transaction decreases the success rate in both algorithms.
 \clearpage
 \subsection{Ratio of read/writes}
 
-Studying the success rate taking into account the ratio of read/writes per instruction, we can say that both algorithms perform better with rates closer to the edges (0-100\%). In only-write (0\% of read operations) \textit{opty} performs better. Both algorithms decrease their success ratios with 10-30\% of read operations, although \textit{timey} performs better (around ~15\% as the maximum difference). From that point, increasing the ratio will produce an increased success ratio in \textit{timey} and maintaining the rate in \textit{opty}. Only in full-read transactions (100\% of reads operations) both algorithms match again.
+Studying the success rate taking into account the ratio of read/writes per instruction, we can say that both algorithms perform better with rates closer to the edges (0-100\%). In only-write (0\% of read operations) \textit{opty} performs better. Both algorithms decrease their success ratios with 10-30\% of read operations, although \textit{timey} performs better (around ~15\% as the maximum difference). From that point, increasing the ratio will produce an increased success ratio in \textit{timey} and maintaining the rate in \textit{opty}. Only in full-read transactions (100\% of reads operations), both algorithms match again.
 
 \begin{figure}[H]
   \centering
@@ -546,7 +546,7 @@ Studying the success rate taking into account the ratio of read/writes per instr
 \clearpage
 \subsection{Different percentage of accessed entries w.r.t the total number of entries}
 
-Both algorithms have the same behaviour. The lower are the entries accessed, the higher are the success rate. Less entries accessed per client implies having less probability of clashes between transactions. This impact is lowen in \textit{timey}, in which we obtaining smoother curves.
+Both algorithms have the same behaviour. The lower the number of entries accessed, the higher the success rate. Fewer entries accessed per client implies having less probability of clashes between transactions. This impact is lower in \textit{timey}, in which we obtain smoother curvesin contrast \textit{opty}.
 
 It is important to remark that \textit{timey} algorithm obtains better results in all the experiments we have done in this section, according to all the results of the experiments we have done previously.
 
