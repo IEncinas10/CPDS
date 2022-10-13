@@ -439,22 +439,22 @@ Obviously this is sort of a patological example and is not representative. Surel
 \clearpage
 \section{Distributed execution}
 
-For this experiment we have made a few changes in order to be able to generate a process in other node from one unique start function. The changes have been done in \textit{opty} module. 
+For this experiment, we have made a few changes to generate a process in another node from one unique start function. The changes have been done in the \textit{opty} module. 
 
-In order to be able to call the distributed server we have to register it and have it in the client side. We have used the piece of code from listing \ref{list:register}
+To be able to call the distributed server we have to register it and have it on the client side. We have used the piece of code from listing \ref{list:register}
 
 
 \begin{minipage}{\textwidth}
-	\begin{lstlisting}[language=erlang, caption={Register Distributed Server}]
+  \begin{lstlisting}[language=erlang, caption={Register Distributed Server}, label={list:register}]
     spawn(Snode, fun() -> 
                          register(s, server:start(Entries))end),
+  
  	\end{lstlisting}
-  \label{list:register}
-    \end{minipage}
+\end{minipage}
 
-In the figures \ref{fig:2nodes}-\ref{fig:1node} it is shown the execution of the distributed algorithm. In the first one, we can see 2 nodes, in which we run clientside and serverside. In the left terminal, it is shown that \texttt{s} is created in server node and the start function is executed in the client node. 
+Figures \ref{fig:2nodes}-\ref{fig:1node} it is shown the execution of the distributed algorithm. In the first one, we can see two nodes, in which we run clientside and serverside. In the right terminal, it is shown that \texttt{s} is created in the server node and the start function is executed in the client node (left terminal). 
 
-Also, to show the correct behaviour, in the figure \ref{fig:1node} the server node is down and we are not able to spawn the server in that node, so the algorithm does not work.
+Also, to show the correct behaviour, in figure \ref{fig:1node}, the server node is down and we can not spawn the server in that node, so the algorithm does not work.
 
 
 
@@ -479,9 +479,9 @@ Also, to show the correct behaviour, in the figure \ref{fig:1node} the server no
 
 \subsection{Number of concurrent clients in the system}\label{timey-current-clients}
 
-As we mentioned in Section \ref{sec:numclients}, in optimistic control, increasing the amount of clients makes clashes more frequently, reducing the success ratio. When we increase the number of clients in timestamp control (timey), the number of clients also reduces the success ratio, but not that drastically, as it is shown in figure \ref{timey:numclients}. 
+As we mentioned in Section \ref{sec:numclients}, in optimistic control, increasing the number of clients makes clashes more frequent, reducing the success ratio. When we increase the number of clients with timestamp control (timey), the number of clients also reduces the success ratio, but not that drastically, as it is shown in figure \ref{timey:numclients}. 
 
-In \textit{timey} algorithm the writes temptatives are allocated in an ordered queue by the timestamp, being only discarded the transactions with older timestamp than the current version of the object (last read or written object).
+In the \textit{timey} algorithm, the writes tentatives are allocated in an ordered queue by the timestamp, being only discarded the transactions with older timestamps than the current version of the object (last read or written object).
 
 \begin{figure}[H]
   \centering
@@ -493,9 +493,9 @@ In \textit{timey} algorithm the writes temptatives are allocated in an ordered q
 \clearpage
 \subsection{Number of entries in the store}
 
-The results show us that the bigger the number of entries respect the number of clients, the best success rate we obtain for both algorithms. \textit{Timey} algorithm results are better than \textit{opty} in the same conditions (same number of reads and writtes per transaction). Even in corner cases as $\text{clients} \gg \text{entries}$, the success ratio is better. 
+The results show us that the bigger the number of entries for the number of clients, the best the success rate we obtain for both algorithms. \textit{Timey} algorithm results are better than \textit{opty} in the same conditions (same number of reads and writes per transaction). Even in corner cases as $\text{clients} \gg \text{entries}$, the success ratio is better. 
 
-This behaviour is produced by the same cause explained in Section \ref{timey-current-clients}, the lower entries we have the more clashes we obtain. That shows that \textit{timey} has better tolerance.
+This behaviour is produced by the same cause explained in Section \ref{timey-current-clients}. The lower entries we have the more clashes we obtain. Results show that \textit{timey} has better tolerance.
 
 \begin{figure}[H]
   \centering
@@ -508,9 +508,9 @@ This behaviour is produced by the same cause explained in Section \ref{timey-cur
 \clearpage
 \subsection{Number of reads per transaction}
 
-Doing more reads per transaction decreases the success rate in the \textit{opty} algorithm, although in \textit{timey} algorithm this is not the behaviour, mantaining a ~98\% of success rate.
+Doing more reads per transaction decreases the success rate in the \textit{opty} algorithm. Differing from \textit{timey} algorithm behaviour, which maintains a ~98\% of success rate.
 
-That is due to how \textit{timey} controls the read transactions. It will read the higher timestamp transaction that is lower than its timestamp, if the transaction is a temptative it will wait until that temptative is published. That mechanisism allows to the algorithm to do not discard a large number of read transactions, only the ones that has a lower timestamp that last write transaction timestamp.
+This difference is due to how \textit{timey} controls the read transactions. It will read the higher timestamp transaction that is lower than its timestamp, if the transaction is a tentative it will wait until that tentative is published. That mechanism allows the algorithm to not discard a large number of read transactions, only ones that have a lower timestamp than the last write transaction timestamp.
 
 \begin{figure}[H]
   \centering
@@ -522,7 +522,7 @@ That is due to how \textit{timey} controls the read transactions. It will read t
 \clearpage
 \subsection{Number of writes per transaction}
 
-Doing more writes per transaction decreases the success rate in both algorithms. In both cases we increase the probability of clashes. As the data shows, \textit{timey} algorithm performs better in success rate for all the writes per transaction we have tested.
+Doing more writes per transaction decreases the success rate in both algorithms. In both cases, we increase the probability of clashes. As the data shows, the \textit{timey} algorithm performs better in success rate for all the number of writes per transaction we have tested.
 
 \begin{figure}[H]
   \centering
@@ -534,7 +534,7 @@ Doing more writes per transaction decreases the success rate in both algorithms.
 \clearpage
 \subsection{Ratio of read/writes}
 
-Studying the success rate taking in account the ratio of read/writes per instruction we can say that both algorithms perform better with ratios closer to the edges (0-100\%). In only-write (0\% of read operations) \textit{opty} performs better. Both algorithms decreases its success ratios with 10-30\% of read operations although \textit{timey} performs better (around ~15\% as maximum difference). From that point, increasing the ratio will produce an increse success ratio in \textit{timey} and mantaining the ratio in \textit{opty}. Only in full-read transactions (100\% of reads operations) both algorithms will be matched again.
+Studying the success rate taking into account the ratio of read/writes per instruction, we can say that both algorithms perform better with rates closer to the edges (0-100\%). In only-write (0\% of read operations) \textit{opty} performs better. Both algorithms decrease their success ratios with 10-30\% of read operations, although \textit{timey} performs better (around ~15\% as the maximum difference). From that point, increasing the ratio will produce an increased success ratio in \textit{timey} and maintaining the rate in \textit{opty}. Only in full-read transactions (100\% of reads operations) both algorithms match again.
 
 \begin{figure}[H]
   \centering
@@ -546,7 +546,7 @@ Studying the success rate taking in account the ratio of read/writes per instruc
 \clearpage
 \subsection{Different percentage of accessed entries w.r.t the total number of entries}
 
-Both algorithms have the same behaviour. The lower are the entries accesesed, the higher are the success rate. Having less probability of clashes between transactions, although the impact on \textit{timey} is lower, obtaining smoother curves.
+Both algorithms have the same behaviour. The lower are the entries accessed, the higher are the success rate. Less entries accessed per client implies having less probability of clashes between transactions. This impact is lowen in \textit{timey}, in which we obtaining smoother curves.
 
 It is important to remark that \textit{timey} algorithm obtains better results in all the experiments we have done in this section, according to all the results of the experiments we have done previously.
 
