@@ -1,0 +1,10 @@
+Team #01
+ENCINAS RUBIO, IGNACIO
+JIMÉNEZ GONZÁLEZ, ADRIÁN
+
+* Very comprehensive report!
+* When receiving an accept and Round < Voted, 'acceptor(Name, Promised, Round, Voted, PanelId)' must be 'acceptor(Name, Promised, Voted, Value, PanelId)'. Note that this mistake might be affecting your conclusions.
+* Fault tolerance:
+  - You'd better save the acceptor state before sending 'vote' messages (only if modified)
+  - When receiving an accept and Round < Voted, you are currently saving a wrong state
+  - You must invoke pers:store in the init function to save the PanelId when Pn is na
