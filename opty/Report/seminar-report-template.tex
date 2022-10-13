@@ -444,7 +444,7 @@ For this experiment we have made a few changes in order to be able to generate a
 In order to be able to call the distributed server we have to register it and have it in the client side. We have used the piece of code from listing \ref{list:register}
 
 
-\begin{minipage}{.45\textwidth}
+\begin{minipage}{\textwidth}
 	\begin{lstlisting}[language=erlang, caption={Register Distributed Server}]
     spawn(Snode, fun() -> 
                          register(s, server:start(Entries))end),
@@ -493,7 +493,7 @@ In \textit{timey} algorithm the writes temptatives are allocated in a ordered qu
 \clearpage
 \subsection{Number of entries in the store}
 
-The results shows us that the bigger the number of entries respect the number of clients, the best success rate we obtain for both algorithm. The \textit{timey} algorithm results are better than \textit{opty} in the same conditions (same number of reads and writtes per transaction). Even in corner cases as $\text{clients} \gg \text{entries}$, the success ratio is better. 
+The results show us that the bigger the number of entries respect the number of clients, the best success rate we obtain for both algorithm. The \textit{timey} algorithm results are better than \textit{opty} in the same conditions (same number of reads and writtes per transaction). Even in corner cases as $\text{clients} \gg \text{entries}$, the success ratio is better. 
 
 This behaviour is produced by the same cause explained in Section \ref{timey-current-clients}, the lower entries we have the more clashes we obtain. That shows that \textit{timey} has better tolerance.
 
