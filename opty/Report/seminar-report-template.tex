@@ -477,7 +477,11 @@ Also, to show the correct behaviour, in the figure \ref{fig:1node} the server no
 \section{Other concurrency control techniques}
 
 
-\subsection{Number of concurrent clients in the system}
+\subsection{Number of concurrent clients in the system}\label{timey-current-clients}
+
+As we mentioned in Section \ref{sec:numclients}, in optimistic control, increasing the amount of clients makes clashes more frequently, reducing the success ratio. The timestamp control (timey) increasing the number of clients also reduces the success ratio, but not that drastically, as it is shown in figure \ref{timey:numclients}. 
+
+In \textit{timey} algorithm the writes temptatives are allocated in a ordered queue by the timestamp, being only discarted the transactions with older timestamp than the current version of the object (last readed or written object).
 
 \begin{figure}[H]
   \centering
@@ -486,8 +490,12 @@ Also, to show the correct behaviour, in the figure \ref{fig:1node} the server no
     \label{timey:numclients}
 \end{figure} 
 
-
+\clearpage
 \subsection{Number of entries in the store}
+
+The results shows us that the bigger the number of entries respect the number of clients, the best success rate we obtain for both algorithm. The \textit{timey} algorithm results are better than \textit{opty} in the same conditions (same number of reads and writtes per transaction). Even in corner cases as $\text{clients} \gg \text{entries}$, the success ratio is better. 
+
+This behaviour is produced by the same cause explained in Section \ref{timey-current-clients}, the lower entries we have the more clashes we obtain. That shows that \textit{timey} has better tolerance.
 
 \begin{figure}[H]
   \centering
