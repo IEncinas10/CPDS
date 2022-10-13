@@ -481,7 +481,7 @@ Also, to show the correct behaviour, in the figure \ref{fig:1node} the server no
 
 As we mentioned in Section \ref{sec:numclients}, in optimistic control, increasing the amount of clients makes clashes more frequently, reducing the success ratio. When we increase the number of clients in timestamp control (timey), the number of clients also reduces the success ratio, but not that drastically, as it is shown in figure \ref{timey:numclients}. 
 
-In \textit{timey} algorithm the writes temptatives are allocated in a ordered queue by the timestamp, being only discarded the transactions with older timestamp than the current version of the object (last read or written object).
+In \textit{timey} algorithm the writes temptatives are allocated in an ordered queue by the timestamp, being only discarded the transactions with older timestamp than the current version of the object (last read or written object).
 
 \begin{figure}[H]
   \centering
@@ -534,7 +534,7 @@ Doing more writes per transaction decreases the success rate in both algorithms.
 \clearpage
 \subsection{Ratio of read/writes}
 
-Studying the success rate taking in account the ratio of read/writes per instruction we can say that both algorithm perform better with ratios closer to the edges (0-100\%). In only-write (0 read/write ratio) \textit{opty} performs better. Both algorithms decreases its success ratios with 10-30\% of read operations although \textit{timey} performs better (around ~15\% as maximum difference). From that point, increasing the ratio will produce an increse success ratio in \textit{timey} and mantaining the ratio in \textit{opty}. Only in full-read transactions (100\% of reads operations) both algorithms will be matched again.
+Studying the success rate taking in account the ratio of read/writes per instruction we can say that both algorithms perform better with ratios closer to the edges (0-100\%). In only-write (0\% of read operations) \textit{opty} performs better. Both algorithms decreases its success ratios with 10-30\% of read operations although \textit{timey} performs better (around ~15\% as maximum difference). From that point, increasing the ratio will produce an increse success ratio in \textit{timey} and mantaining the ratio in \textit{opty}. Only in full-read transactions (100\% of reads operations) both algorithms will be matched again.
 
 \begin{figure}[H]
   \centering
@@ -546,7 +546,7 @@ Studying the success rate taking in account the ratio of read/writes per instruc
 \clearpage
 \subsection{Different percentage of accessed entries w.r.t the total number of entries}
 
-Both algorithms have the same behaviour. The lower are the entries accesesed, the higher is the success rate. Having less probability of clashes between transactions, although the impact on \textit{timey} is lower, obtaining smoother curves.
+Both algorithms have the same behaviour. The lower are the entries accesesed, the higher are the success rate. Having less probability of clashes between transactions, although the impact on \textit{timey} is lower, obtaining smoother curves.
 
 It is important to remark that \textit{timey} algorithm obtains better results in all the experiments we have done in this section, according to all the results of the experiments we have done previously.
 
