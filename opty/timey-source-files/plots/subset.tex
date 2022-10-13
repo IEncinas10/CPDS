@@ -11,25 +11,33 @@
 	\begin{axis}[
 	    width=\textwidth,
 	    %height=0.55\textwidth,
-	    xlabel=Read ratio (\%),
+	    xlabel=Access ratio (\%),
 	    grid=major,
 	    ylabel=Mean success rate (\%),
 	    xmin=0,xmax=1, % <-- added here to preserve view
-	    ymin=35,ymax=100,
-	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=1}
+	    title={10 Entries, 1 Read, 1 Write, 4sec},
+	    %ymin=35,ymax=100,
+	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=3}
 	]
 
 	\addplot[mark=*, mark size=1pt, blue, error bars/.cd,     error bar style={line width=0.75pt, dashed} ,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../subset_backup/clean};	
-	\addlegendentry{Timey: 10 Clients, 10 Entries, 1 Read, 1 Write, 4sec};
+	\addlegendentry{Timey: 10 Clients};
 
 	\addplot[mark=*, mark size=1pt, orange, error bars/.cd,     error bar style={line width=0.75pt, dashed} ,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../subset/clean};	
-	\addlegendentry{Timey: 20 Clients, 10 Entries, 1 Read, 1 Write, 4sec};
+	\addlegendentry{Timey: 20 Clients};
+
+	\addplot[mark=*, mark size=1pt, brown, error bars/.cd,     error bar style={line width=0.75pt, dashed} ,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../subset2/clean};	
+	\addlegendentry{Timey: 100 Clients};
 
 	\addplot[mark=*, mark size=1pt, black, error bars/.cd,     error bar style={line width=0.75pt, dashed} ,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../../opty-source-files/subset_backup/clean};	
-	\addlegendentry{Opty: 10 Clients, 10 Entries, 1 Read, 1 Write, 4sec};
+	\addlegendentry{Opty: 10 Clients};
 
 	\addplot[mark=*, mark size=1pt, red, error bars/.cd,     error bar style={line width=0.75pt, dashed} ,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../../opty-source-files/subset/clean};	
-	\addlegendentry{Opty: 20 Clients, 10 Entries, 1 Read, 1 Write, 4sec};
+	\addlegendentry{Opty: 20 Clients};
+
+
+	\addplot[mark=*, mark size=1pt, green, error bars/.cd,     error bar style={line width=0.75pt, dashed} ,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../../opty-source-files/subset2/clean};	
+	\addlegendentry{Opty: 100 Clients};
 
 	
         %\addplot[black, thick, samples=50, domain=0:5000] {20000};
