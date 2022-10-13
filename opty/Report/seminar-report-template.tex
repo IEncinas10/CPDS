@@ -504,7 +504,13 @@ This behaviour is produced by the same cause explained in Section \ref{timey-cur
     \label{timey:numentries}
 \end{figure} 
 
+
+\clearpage
 \subsection{Number of reads per transaction}
+
+Doing more reads per transaction decreases the success rate in the \textit{opty} algorithm, although in \textit{timey} algorithm this is not the behaviour, mantaining a ~98\% of success rate.
+
+That is due to how \textit{timey} controls the read transactions. It will read the higher timestamp transaction that is lower than its timestamp, if the transaction is a temptative it will wait until that temptative is published. That mechanisism allows to the algorithm to do not discart a large number of read transactions, only the ones that has a lower timestamp that last write transaction timestamp.
 
 \begin{figure}[H]
   \centering
@@ -513,7 +519,10 @@ This behaviour is produced by the same cause explained in Section \ref{timey-cur
     \label{timey:numreads}
 \end{figure} 
 
+\clearpage
 \subsection{Number of writes per transaction}
+
+Doing more writes per tranaction decreases the success rate in both algorithms. In both cases we increase the probability of clashes. As the data shows, \textit{timey} algorithm performs better in success rate for all the writes per transaction we have probed.
 
 \begin{figure}[H]
   \centering
@@ -522,7 +531,10 @@ This behaviour is produced by the same cause explained in Section \ref{timey-cur
     \label{timey:numwrites}
 \end{figure} 
 
+\clearpage
 \subsection{Ratio of read/writes}
+
+Studying the success rate taking in account the ratio of read/writes per instruction we can say that both algorithm perform better with ratios closer to the edges (0-100\%). In only Write (0 read/write ratio) \textit{opty} performs better. Both algorithms decreases its success ratios with 10-30\% of read operations although \textit{timey} performs better (around ~15\% as maximum difference). From that point, increasing the ratio will produce an increse success ratio in \textit{timey} and mantaining the ratio in \textit{opty}. Only in full read transactions (100\% of reads operations) both algorithms will be matched again.
 
 \begin{figure}[H]
   \centering
@@ -531,7 +543,12 @@ This behaviour is produced by the same cause explained in Section \ref{timey-cur
     \label{timey:ratio}
 \end{figure} 
 
+\clearpage
 \subsection{Different percentage of accessed entries w.r.t the total number of entries}
+
+Both algorithms have the same behaviour. The lower are the entries accesesed, the higher is the success rate. Having less probability of clashes between transactions, although the impact on \textit{timey} is lower, obtaining smoother curves.
+
+It is important to remark that \textit{timey} algorithm obtains better results in all the experiments we have done in this section, according to all the results of the experiments we have done previously.
 
 \begin{figure}[H]
   \centering
