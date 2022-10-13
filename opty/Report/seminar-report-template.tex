@@ -479,9 +479,9 @@ Also, to show the correct behaviour, in the figure \ref{fig:1node} the server no
 
 \subsection{Number of concurrent clients in the system}\label{timey-current-clients}
 
-As we mentioned in Section \ref{sec:numclients}, in optimistic control, increasing the amount of clients makes clashes more frequently, reducing the success ratio. The timestamp control (timey) increasing the number of clients also reduces the success ratio, but not that drastically, as it is shown in figure \ref{timey:numclients}. 
+As we mentioned in Section \ref{sec:numclients}, in optimistic control, increasing the amount of clients makes clashes more frequently, reducing the success ratio. When we increase the number of clients in timestamp control (timey), the number of clients also reduces the success ratio, but not that drastically, as it is shown in figure \ref{timey:numclients}. 
 
-In \textit{timey} algorithm the writes temptatives are allocated in a ordered queue by the timestamp, being only discarted the transactions with older timestamp than the current version of the object (last readed or written object).
+In \textit{timey} algorithm the writes temptatives are allocated in a ordered queue by the timestamp, being only discarded the transactions with older timestamp than the current version of the object (last read or written object).
 
 \begin{figure}[H]
   \centering
@@ -510,7 +510,7 @@ This behaviour is produced by the same cause explained in Section \ref{timey-cur
 
 Doing more reads per transaction decreases the success rate in the \textit{opty} algorithm, although in \textit{timey} algorithm this is not the behaviour, mantaining a ~98\% of success rate.
 
-That is due to how \textit{timey} controls the read transactions. It will read the higher timestamp transaction that is lower than its timestamp, if the transaction is a temptative it will wait until that temptative is published. That mechanisism allows to the algorithm to do not discart a large number of read transactions, only the ones that has a lower timestamp that last write transaction timestamp.
+That is due to how \textit{timey} controls the read transactions. It will read the higher timestamp transaction that is lower than its timestamp, if the transaction is a temptative it will wait until that temptative is published. That mechanisism allows to the algorithm to do not discard a large number of read transactions, only the ones that has a lower timestamp that last write transaction timestamp.
 
 \begin{figure}[H]
   \centering
