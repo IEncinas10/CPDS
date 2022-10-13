@@ -54,6 +54,19 @@ erl -make
     #done
 #done
 
+entries=(1 2 3)
+for entries in "${entries[@]}"; do
+    for clients in "${num_clients[@]}"; do
+	echo $clients, $j, $k, $d;
+	filename=opty"$clients".out;
+	erl -noshell -pa ebin -eval "opty:start($clients, $entries, 3, 1, $maxtime)" > numclients5/$filename & pid=$!; sleep $sleeptime; kill $pid
+	geomean=$(grep "Mean" numclients5/$filename | awk -F '[:]' '{print $2}')
+	stddev=$(grep "Stddev" numclients5/$filename | awk -F '[:]' '{print $2}')
+	echo $clients, $geomean, $stddev >> numclients5/clean_$entries
+    done
+done
+
+
 #for clients in "${num_clients[@]}"; do
     #echo $clients, $j, $k, $d;
     #filename=opty"$clients".out;
@@ -105,14 +118,14 @@ erl -make
     #echo $ratio, $geomean, $stddev >> readratio/clean
 #done
 
-for percentage in "${sub_percentage[@]}"; do
-    echo $percentage;
-    filename=opty"$percentage".out;
-    export subset_percentage=$percentage; erl -noshell -pa ebin -eval "opty:start(100, $d_entries, $d_reads, $d_writes, $maxtime)" > subset2/$filename & pid=$!; sleep $sleeptime; kill $pid
-    geomean=$(grep "Mean" subset2/$filename | awk -F '[:]' '{print $2}')
-    stddev=$(grep "Stddev" subset2/$filename | awk -F '[:]' '{print $2}')
-    echo $percentage, $geomean, $stddev >> subset2/clean
-done
+#for percentage in "${sub_percentage[@]}"; do
+    #echo $percentage;
+    #filename=opty"$percentage".out;
+    #export subset_percentage=$percentage; erl -noshell -pa ebin -eval "opty:start(100, $d_entries, $d_reads, $d_writes, $maxtime)" > subset2/$filename & pid=$!; sleep $sleeptime; kill $pid
+    #geomean=$(grep "Mean" subset2/$filename | awk -F '[:]' '{print $2}')
+    #stddev=$(grep "Stddev" subset2/$filename | awk -F '[:]' '{print $2}')
+    #echo $percentage, $geomean, $stddev >> subset2/clean
+#done
 
 #sort -V -t ',' -k1 oldrounds > rounds
 # Ordenar csv por valor numérico por la primera columna

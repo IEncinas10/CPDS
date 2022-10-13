@@ -433,9 +433,23 @@ Obviously as the transaction complexity increases the calculation required to ob
     \label{fig:magia}
 \end{figure} 
 
-This also helps explain the situation where adding entries does decrease the mean success rate. It's very unintuitive but considering this lower bound makes it much more obvious. When $\text{clients} \gg \text{entries}$ the conflicts will be unavoidable so the success rate will be very close to the lower bound, and increasing the number of entries decreases that lower bound.
+This also helps explain the situation where adding entries does decrease the mean success rate. It's very unintuitive but considering this lower bound makes it much more obvious. When $\text{clients} \gg \text{entries}$ the conflicts will be unavoidable so the success rate will be very close to the lower bound, and increasing the number of entries decreases that lower bound significantly.
 
-Obviously this is sort of a patological example and is not representative. Surely the lower bound for any realistic transaction is so small that this effect does not matter at all. Other practical factors such as server load and network contention should be also be considered.
+Obviously this is sort of a pathological example and it is not too representative. Surely the lower bound for any realistic transaction is so small that relying on this effect in order to sustain an acceptable lower bound makes no sense. Applying an algorithm for optimistic concurrency when you're expecting massive entry overload and contention would be pretty fun!
+
+\clearpage
+
+In order to check that our intuition is correct we've also checked with 2 Reads and 1 Write, where the expected lower bound would be $\displaystyle \frac{0.5}{n^2}$. The chance of starting the transaction with a write is still $50\%$ but now we have to hit the two consecutive reads in the same entry we read, thus getting a probability of $0.5 \cdot \frac{1}{n} \cdot \frac{1}{n}$. Figure \ref{fig:magia2} illustrates the expected trend. Similarly, we have replicated the results for other simple configurations.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{plots/numclients2.pdf}
+    \caption{Success rate w.r.t nº of clients and entries}
+    \label{fig:magia2}
+\end{figure} 
+
+Overall, noticing this effect after discussing it in the labs session has been very enjoyable. Of course it is not of any practical use as we've already mentioned, but it shows how complex distributed systems are.
+
+
 \clearpage
 \section{Distributed execution}
 
