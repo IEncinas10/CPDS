@@ -7,7 +7,8 @@
 num_clients=(2 50 100 150 300 600 900 2000)
 num_entries=(1 11 21 31 41 51 61 71 81 91 101)
 num_reads=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20)
-num_writes=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20)
+#num_writes=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20)
+num_writes=(50 100 150)
 
 read_ratios=(0 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1)
 sub_percentage=(0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.0)
@@ -54,17 +55,17 @@ erl -make
     #done
 #done
 
-entries=(1 2 3)
-for entries in "${entries[@]}"; do
-    for clients in "${num_clients[@]}"; do
-	echo $clients, $j, $k, $d;
-	filename=opty"$clients".out;
-	erl -noshell -pa ebin -eval "opty:start($clients, $entries, 3, 1, $maxtime)" > numclients5/$filename & pid=$!; sleep $sleeptime; kill $pid
-	geomean=$(grep "Mean" numclients5/$filename | awk -F '[:]' '{print $2}')
-	stddev=$(grep "Stddev" numclients5/$filename | awk -F '[:]' '{print $2}')
-	echo $clients, $geomean, $stddev >> numclients5/clean_$entries
-    done
-done
+#entries=(1 2 3)
+#for entries in "${entries[@]}"; do
+    #for clients in "${num_clients[@]}"; do
+	#echo $clients, $j, $k, $d;
+	#filename=opty"$clients".out;
+	#erl -noshell -pa ebin -eval "opty:start($clients, $entries, 3, 1, $maxtime)" > numclients5/$filename & pid=$!; sleep $sleeptime; kill $pid
+	#geomean=$(grep "Mean" numclients5/$filename | awk -F '[:]' '{print $2}')
+	#stddev=$(grep "Stddev" numclients5/$filename | awk -F '[:]' '{print $2}')
+	#echo $clients, $geomean, $stddev >> numclients5/clean_$entries
+    #done
+#done
 
 
 #for clients in "${num_clients[@]}"; do
@@ -94,14 +95,14 @@ done
     #echo $reads, $geomean, $stddev >> numreads/clean
 #done
 
-#for writes in "${num_writes[@]}"; do
-    #echo $writes, $j, $k, $d;
-    #filename=opty"$writes".out;
-    #erl -noshell -pa ebin -eval "opty:start($d_clients, $d_entries, $d_reads, $writes, $maxtime)" > numwrites/$filename & pid=$!; sleep $sleeptime; kill $pid
-    #geomean=$(grep "Mean" numwrites/$filename | awk -F '[:]' '{print $2}')
-    #stddev=$(grep "Stddev" numwrites/$filename | awk -F '[:]' '{print $2}')
-    #echo $writes, $geomean, $stddev >> numwrites/clean
-#done
+for writes in "${num_writes[@]}"; do
+    echo $writes, $j, $k, $d;
+    filename=opty"$writes".out;
+    erl -noshell -pa ebin -eval "opty:start($d_clients, $d_entries, $d_reads, $writes, $maxtime)" > numwrites/$filename & pid=$!; sleep $sleeptime; kill $pid
+    geomean=$(grep "Mean" numwrites/$filename | awk -F '[:]' '{print $2}')
+    stddev=$(grep "Stddev" numwrites/$filename | awk -F '[:]' '{print $2}')
+    echo $writes, $geomean, $stddev >> numwrites/clean
+done
 
 # reads =$(perl -le 'print '"$read_ratio"' * '"$total"' ')
 # writes=$(expr $total - $reads)
