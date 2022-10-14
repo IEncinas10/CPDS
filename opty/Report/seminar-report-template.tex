@@ -435,7 +435,7 @@ Obviously as the transaction complexity increases the calculation required to ob
 
 This also helps explain the situation where adding entries does decrease the mean success rate. It's very unintuitive but considering this lower bound makes it much more obvious. When $\text{clients} \gg \text{entries}$ the conflicts will be unavoidable so the success rate will be very close to the lower bound, and increasing the number of entries decreases that lower bound significantly.
 
-Obviously this is sort of a pathological example and it is not too representative. Surely the lower bound for any realistic transaction is so small that relying on this effect in order to sustain an acceptable lower bound makes no sense. Applying an algorithm for optimistic concurrency when you're expecting massive entry overload and contention would be pretty fun!
+Obviously this is sort of a pathological example and it is not too representative. Surely the lower bound for any realistic transaction is so small that relying on this effect in order to sustain an acceptable lower bound makes no sense. Applying an algorithm for optimistic concurrency when you're expecting massive entry overload and contention would be pretty \textbf{bold}!
 
 \clearpage
 

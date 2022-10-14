@@ -14,20 +14,25 @@
 	    xlabel=Entries,
 	    grid=major,
 	    ylabel=Mean success rate (\%),
-	    xmin=0.5,xmax=101.5, % <-- added here to preserve view
-	    ymin=55,ymax=100,
-	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=1}
+	    %xmin=0.5,xmax=101.5, % <-- added here to preserve view
+	    %xmin=0.5,xmax=11.5, % <-- added here to preserve view
+	    %ymin=55,ymax=100,
+	    title={2 Clients},
+	    legend style={at={(0.52,-0.12)},anchor=north, legend columns=2}
 	]
 
 	\addplot[mark=*, mark size=1pt, black, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numentries/clean};	
-	\addlegendentry{Timey: 2 Clients, 1 Read, 1 Write, 4sec};
+	\addlegendentry{Timey: 1 Read, 1 Write, 4sec};
 	\addplot[mark=*, mark size=1pt, blue, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numentries2/clean};	
-	\addlegendentry{Timey: 2 Clients, 3 Read, 3 Write, 4sec};
+	\addlegendentry{Timey: 3 Read, 3 Write, 4sec};
 
 	    \addplot[mark=*, mark size=1pt, orange, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../../opty-source-files/numentries/clean};	
-	\addlegendentry{Opty: 2 Clients, 1 Read, 1 Write, 4sec};
+	\addlegendentry{Opty: 1 Read, 1 Write, 4sec};
 	    \addplot[mark=*, mark size=1pt, green, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../../opty-source-files/numentries2/clean};	
-	\addlegendentry{Opty: 2 Clients, 3 Read, 3 Write, 4sec};
+	\addlegendentry{Opty: 3 Read, 3 Write, 4sec};
+
+	%\addplot[mark=*, mark size=1pt, brown, error bars/.cd,  y explicit,y dir=both] table [x index=0, y index=1, y error expr=\thisrowno{2} * 1 , col sep=comma]{../numentries3/clean};	
+	%\addlegendentry{Timey: 100 clients, 1 read, 1 write, 4sec};
 
 	
         %\addplot[black, thick, samples=50, domain=0:5000] {20000};
