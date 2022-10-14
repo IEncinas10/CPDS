@@ -10,7 +10,11 @@ init()->
 validator() ->
     receive
         {validate, Ref, Reads, Writes, Client} ->
-            Tag = make_ref(),
+            
+            lists:foreach(fun({_, Entry, Value}) -> 
+                Entry ! {delete, self()}
+                    end,
+                    Writes),
 	    % Send check request to every entry we've read
             send_write_check(Writes),  %% modify to check_writes
 	    % Process the result
@@ -21,10 +25,6 @@ validator() ->
                     Client ! {Ref, ok};
                 abort ->
 		    % Transaction read stale data, abort
-                  lists:foreach(fun({_, Entry, Value}) -> 
-                  Entry ! {delete, self()}
-                          end,
-                          Writes),
 
 		              Client ! {Ref, abort}
             end,
@@ -49,6 +49,7 @@ update(Writes) ->
 send_write_check(Writes) ->
     Self = self(),
     lists:foreach(fun({_, Entry, Value}) -> 
+    io:format("checking~n"),
     Entry ! {check, Self}
           end,
           Writes).
@@ -58,9 +59,9 @@ check_writes(0) ->
 
 check_writes(N) ->
   receive
-    {_ ,ok} ->
+    {ok} ->
       check_writes(N-1);
-    {_ , abort} ->
+    {abort} ->
       abort
   end.
 

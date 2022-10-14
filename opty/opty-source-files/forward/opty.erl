@@ -20,6 +20,7 @@ stop(L) ->
     stopClients(L),
     io:format("waiting for data...~n"),
     waitClients(L, []),
+    io:format("stopping server..."),
     s ! stop,
     io:format("Stopped~n").
 
