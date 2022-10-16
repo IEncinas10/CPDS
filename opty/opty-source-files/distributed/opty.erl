@@ -55,6 +55,6 @@ waitClients(L, SuccessRate) ->
 
 stddev(ListofNumbers, Mean) ->
     N = length(ListofNumbers),
-    {Tmp, Basura} = lists:foldl(fun(X, ErlangDaAsco) -> {Sum_, Mean_} = ErlangDaAsco, {Sum_ + math:pow(X-Mean_, 2), Mean_} end, {0, Mean}, ListofNumbers),
+    {Tmp, _} = lists:foldl(fun(X, Aux) -> {Sum_, Mean_} = Aux, {Sum_ + math:pow(X-Mean_, 2), Mean_} end, {0, Mean}, ListofNumbers),
     Tmp2 = Tmp / N,
     math:sqrt(Tmp2).
