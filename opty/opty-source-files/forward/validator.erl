@@ -9,23 +9,30 @@ init()->
 
 validator() ->
     receive
-        {validate, Ref, Reads, Writes, Client} ->
-            
-            lists:foreach(fun({_, Entry, Value}) -> 
-                Entry ! {delete, self()}
+        {validate, Ref, Reads, Writes, Client, From} ->
+            lists:foreach(fun({N, Entry, Value}) -> 
+                Entry ! {delete, From}
                     end,
                     Writes),
 	    % Send check request to every entry we've read
-            send_write_check(Writes),  %% modify to check_writes
+            send_write_check(Writes, From),  %% modify to check_writes
 	    % Process the result
             case check_writes(length(Writes)) of  
                 ok ->
 		    % Transaction OK, flush writes and finish
                     update(Writes),
+                    lists:foreach(fun(Entry) -> 
+                        Entry ! {delete, From}
+                        end,
+                        Reads),
                     Client ! {Ref, ok};
                 abort ->
 		    % Transaction read stale data, abort
-
+                  
+                  lists:foreach(fun(Entry) -> 
+                    Entry ! {delete, From}
+                        end,
+                        Reads),
 		              Client ! {Ref, abort}
             end,
             validator();
@@ -46,11 +53,10 @@ update(Writes) ->
 %%TODO create send_write_check
 
 
-send_write_check(Writes) ->
+send_write_check(Writes, From) ->
     Self = self(),
     lists:foreach(fun({_, Entry, Value}) -> 
-    io:format("checking~n"),
-    Entry ! {check, Self}
+    Entry ! {check, From, Self}
           end,
           Writes).
 

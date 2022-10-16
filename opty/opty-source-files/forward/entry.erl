@@ -10,6 +10,7 @@ init(Value) ->
 entry(Value, ListReads) -> %% TIME NOT NEEDED modify all related code with time
     receive
         {read, Ref, From} ->
+            
             %%TODO  crear lista con las lecturas
             NewListReads = lists:append(ListReads, [From]),
 	          From ! {Ref, self(), Value},
@@ -17,31 +18,26 @@ entry(Value, ListReads) -> %% TIME NOT NEEDED modify all related code with time
         {write, New} ->
             
 	          % We just update the value and the Time/Ref
-            entry(New, ListReads);
-        {check, From} -> %Modify how that is comprobed, look on the list of read if there is other PID (From)
-            io:format("checking list~n"),
+            entry(New, []);
+        {check, From, Validator} -> %Modify how that is comprobed, look on the list of read if there is other PID (From)
             case length(ListReads) of
                 0->
-                    io:format("ok"), 
-		                From !{ok};
+		                Validator !{ok};
                 _ ->
-                    io:format("~w~n", [length(ListReads)]),
-                    From ! {abort}
+                    Validator ! {abort}
             end,
             entry(Value, ListReads);
         {delete, From} ->
-            remove(From, ListReads),
-            entry(Value, ListReads);
+            NewListReads = remove(From, ListReads),
+            entry(Value, NewListReads);
         stop ->
             ok
     end.
 
 
-%remove(X, L) ->
-%    [Y || Y <- L, Y =/= X].
 
-remove(Elem, L)->
-  case lists:delete(Elem,L) of
-    L    -> L;
-    Rest -> remove(Elem,Rest)
-  end.
+remove(_, []) -> [];
+remove(H, [H|T]) ->
+    remove(H, T);
+remove(X, [H|T]) ->
+    [H | remove(X, T)].

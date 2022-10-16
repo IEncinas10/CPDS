@@ -33,7 +33,7 @@ handler(Client, Validator, Store, Reads, Writes) ->
             NewWrites = lists:keystore(N, 1, Writes, {N, Entry, Value}),
             handler(Client, Validator, Store, Reads, NewWrites);
         {commit, Ref} ->
-	          Validator ! {validate, Ref, Reads, Writes, Client};
+	          Validator ! {validate, Ref, Reads, Writes, Client, self()};
         {Ref, Entry, Value} ->
 	    % We got the reading value, send it to Client
 	          Client ! {value, Ref, Value},
