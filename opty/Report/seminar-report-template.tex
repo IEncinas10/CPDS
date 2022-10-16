@@ -588,6 +588,28 @@ With this change in \textit{read} messages, the behaviour on \textit{write} mess
 
 The last type of message is \textit{delete}. This message deletes ALL the appearances of the requested PID from the Read list from the entry.
 
+\subsection{Validator}
+
+The validator module has a few changes in addition to the new entry messages structure. We are introducing some functions like "send\_write\_check" and "check\_writes", are responsible for sending check messages to the corresponding entries and receiving their answers to complete or abort the transactions.
+
+Inside of \texttt{validator} function, we are waiting for a \textit{validate} message from the handler. The first we do (and the first change we find) is that validator asks for deleting ALL the appearances of the handler's PID from ALL the entries he is attempting to write. Then, it sends the checks messages with the previous functions, and depending on the response (ok or abort), it will update the Writes and accomplish successfully the transaction. Or it will abort the transaction. After these actions, the validator will need to delete also the Reads of that transaction in the corresponding entries in which the handler has read.
+
+\subsection{Handler}
+
+As mentioned before, this module only had some minor changes. They are focused on following the structure of the changed messages.
+
+\subsection{Message Diagram}
+
+To clarify the messages introduces, a diagram has been created. In figure \ref{fig:diagram} we can see the messages we are passing between the three modules we made changes and their structures.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{images/messagesForward.png}
+    \caption{Message diagram of Opty with Forward Validation}
+    \label{fig:diagram}
+\end{figure} 
+
+
 \clearpage
 \section{Personal opinion}
 
