@@ -111,7 +111,7 @@ In this module we need to complete the \textbf{entry} function. This function is
 \begin{itemize}
   \item  In case it receive a read message we will send a message with \textit{Value}, a timestamp and our PID.
   \item In case we receive a write message we will just update the \textit{Value}. 
-  \item Finnaly, in case we receive a check messsage, we must compare \textit{Readtime} of the message with our timestamp, if it is the same, we send a ok message (commit), else we send an abort message.
+  \item Finnaly, in case we receive a check message, we must compare \textit{Readtime} of the message with our timestamp, if it is the same, we send a ok message (commit), else we send an abort message.
 \end{itemize}
 
 
@@ -570,6 +570,23 @@ It is important to remark that \textit{timey} algorithm obtains better results i
     \caption{Success rate w.r.t percentage of Entries accessible by each client}
     \label{timey:subset}
 \end{figure} 
+
+\clearpage
+
+
+\section{Forward validation}
+
+To implement \textbf{forward validation} we need to modify the source code of some modules. These modules are handler, validator and entry. Validator and entry have the most changes to modify the behaviour of the checking phase. Meanwhile, handler only needs minor changes to match the structure of new messages to send to the validator and entries.
+
+\subsection{Entry}
+
+In this module, we have introduced a series of changes to accomplish forward validation. First of all, now we do not need to check when \textit{read} messages arrive. The validator will need to compare its Write list with the Reading list of the Entry. For that, we are going to implement a Reading list in Entry module, in which we will add the PID of the Handler every time it read (this implementation will need to take care of deleting all the appearances of that handler, discussed below).
+
+With this change in \textit{read} messages, the behaviour on \textit{write} messages changes. Now, this kind of messages do not need to validate anything, so they will update directly.
+
+\textit{Check} messages have the bigger change. They will change not only the structure but also all their behaviour. Now we check if the list of Reads is empty, which means that no one had read that entry so we are able to commit our transaction. Otherwise, we abort the transaction if there are some PID in our Read list. We are checking if there is an empty list because before checking validator asks for the entry for deleting the PID of the handler of the transaction.
+
+The last type of message is \textit{delete}. This message deletes ALL the appearances of the requested PID from the Read list from the entry.
 
 \clearpage
 \section{Personal opinion}
