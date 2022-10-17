@@ -95,29 +95,29 @@ erl -make
     #echo $reads, $geomean, $stddev >> numreads/clean
 #done
 
-for writes in "${num_writes[@]}"; do
-    echo $writes, $j, $k, $d;
-    filename=opty"$writes".out;
-    erl -noshell -pa ebin -eval "opty:start($d_clients, $d_entries, $d_reads, $writes, $maxtime)" > numwrites/$filename & pid=$!; sleep $sleeptime; kill $pid
-    geomean=$(grep "Mean" numwrites/$filename | awk -F '[:]' '{print $2}')
-    stddev=$(grep "Stddev" numwrites/$filename | awk -F '[:]' '{print $2}')
-    echo $writes, $geomean, $stddev >> numwrites/clean
-done
+#for writes in "${num_writes[@]}"; do
+    #echo $writes, $j, $k, $d;
+    #filename=opty"$writes".out;
+    #erl -noshell -pa ebin -eval "opty:start($d_clients, $d_entries, $d_reads, $writes, $maxtime)" > numwrites/$filename & pid=$!; sleep $sleeptime; kill $pid
+    #geomean=$(grep "Mean" numwrites/$filename | awk -F '[:]' '{print $2}')
+    #stddev=$(grep "Stddev" numwrites/$filename | awk -F '[:]' '{print $2}')
+    #echo $writes, $geomean, $stddev >> numwrites/clean
+#done
 
 # reads =$(perl -le 'print '"$read_ratio"' * '"$total"' ')
 # writes=$(expr $total - $reads)
-#for ratio in "${read_ratios[@]}"; do
-    #filename=opty"$ratio".out;
-    #reads=$(perl -le 'print int('"$ratio"' * '"$total"') ')
-    #writes=$(expr $total - $reads)
+for ratio in "${read_ratios[@]}"; do
+    filename=opty"$ratio".out;
+    reads=$(perl -le 'print int('"$ratio"' * '"$total"') ')
+    writes=$(expr $total - $reads)
 
-    #echo $ratio, $writes, $reads, $total;
+    echo $ratio, $writes, $reads, $total;
 
-    #erl -noshell -pa ebin -eval "opty:start(10, $d_entries, $reads, $writes, $maxtime)" > readratio/$filename & pid=$!; sleep $sleeptime; kill $pid
-    #geomean=$(grep "Mean" readratio/$filename | awk -F '[:]' '{print $2}')
-    #stddev=$(grep "Stddev" readratio/$filename | awk -F '[:]' '{print $2}')
-    #echo $ratio, $geomean, $stddev >> readratio/clean
-#done
+    erl -noshell -pa ebin -eval "opty:start(2, $d_entries, $reads, $writes, $maxtime)" > readratio/$filename & pid=$!; sleep $sleeptime; kill $pid
+    geomean=$(grep "Mean" readratio/$filename | awk -F '[:]' '{print $2}')
+    stddev=$(grep "Stddev" readratio/$filename | awk -F '[:]' '{print $2}')
+    echo $ratio, $geomean, $stddev >> readratio/clean
+done
 
 #for percentage in "${sub_percentage[@]}"; do
     #echo $percentage;

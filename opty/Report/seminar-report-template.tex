@@ -501,9 +501,9 @@ Also, to show the correct behaviour, in figure \ref{fig:1node}, the server node 
 
 \subsection{Number of concurrent clients in the system}\label{timey-current-clients}
 
-As we mentioned in Section \ref{sec:numclients}, in optimistic control, increasing the number of clients makes clashes more frequent, reducing the success ratio. When we increase the number of clients with timestamp control (timey), the number of clients also reduces the success ratio, but not that drastically, as it is shown in figure \ref{timey:numclients}. 
+As we mentioned in Section \ref{sec:numclients}, in optimistic control, increasing the number of clients makes clashes more frequent, reducing the success ratio. When we increase the number of clients with timestamp control (timey), the number of clients also reduces the success ratio, but not that drastically, as it is shown in Figure \ref{timey:numclients}. 
 
-In the \textit{timey} algorithm, the writes tentatives are allocated in an ordered queue by the timestamp, being only discarded the transactions with older timestamps than the current version of the object (last read or written object).
+In the \textit{timey} algorithm, temptative reads and writes are allocated in an queue ordered by the timestamp, discarding only the transactions that don't follow the consistency checks. In the case of writes the timestamp must be higher than the last write's timestamp and greater or equal than the latest read timestamp.
 
 \begin{figure}[H]
   \centering
@@ -511,6 +511,8 @@ In the \textit{timey} algorithm, the writes tentatives are allocated in an order
     \caption{Success rate w.r.t nº of clients}
     \label{timey:numclients}
 \end{figure} 
+
+Figure \ref{timey:numclients} indicates that there are also interesting patterns in \textit{Timey} such as hard lower bounds depending on the parameters of the system.
 
 \clearpage
 \subsection{Number of entries in the store}
