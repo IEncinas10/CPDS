@@ -11,9 +11,15 @@ validator() ->
     receive
         {validate, Ref, Reads, Writes, Client, From} ->
             lists:foreach(fun({N, Entry, Value}) -> 
+                Entry ! {block, From}
+                    end,
+                    Writes),
+
+            lists:foreach(fun({N, Entry, Value}) -> 
                 Entry ! {delete, From}
                     end,
                     Writes),
+
 	    % Send check request to every entry we've read
             send_write_check(Writes, From),  %% modify to check_writes
 	    % Process the result
@@ -35,6 +41,11 @@ validator() ->
                         Reads),
 		              Client ! {Ref, abort}
             end,
+
+            lists:foreach(fun({N, Entry, Value}) -> 
+                Entry ! unblock
+                    end,
+                    Writes),
             validator();
         stop ->
             ok;
