@@ -10,7 +10,7 @@ init(Value) ->
 entry(Value, ListReads, Free) -> %% TIME NOT NEEDED modify all related code with time
 
     receive
-	{block, From} when Free ->
+	block when Free ->
 	    entry(Value, ListReads, false);
 	unblock when not Free->
 	    entry(Value, ListReads, true);

@@ -10,8 +10,11 @@ init()->
 validator() ->
     receive
         {validate, Ref, Reads, Writes, Client, From} ->
+	    % Should we make this somehow syncronous? Or is it ok to
+	    % send this block message as async as it will be processed 
+	    % before any other message we send to the Entry?
             lists:foreach(fun({N, Entry, Value}) -> 
-                Entry ! {block, From}
+                Entry ! block
                     end,
                     Writes),
 
