@@ -52,7 +52,9 @@
 \section{Introduction}
 
 
-\textit{Introduce in a couple of sentences the seminar and the main topic related to distributed systems it covers.}
+In this seminar we'll implement a transaction server using optimistic concurrency control with backwards validation. We'll study the behaviour of the transaction server under the variation of the different parameters to better understand it. Additionally, we have also explored some of its unintuitive behaviour and understood it. 
+
+We have also carried out both lab extensions, comparing timestamp ordering with optimistic concurrency control and while implementing opty with forward validation.
 
 \section{Code modifications}
 
@@ -109,9 +111,9 @@ entry(Value, Time) ->
 In this module we need to complete the \textbf{entry} function. This function is the responsible of the behaviour of the entries. The fuction will receive 3 types of message: read, write and check. 
 
 \begin{itemize}
-  \item  In case it receive a read message we will send a message with \textit{Value}, a timestamp and our PID.
-  \item In case we receive a write message we will just update the \textit{Value}. 
-  \item Finnaly, in case we receive a check message, we must compare \textit{Readtime} of the message with our timestamp, if it is the same, we send a ok message (commit), else we send an abort message.
+    \item  In case it receives a read message we will send a message with the \textit{Value}. The \textit{Ref} identifies the reading operation while \textit{Time} identifies the latest write performed in the entry and \textit{self()} the entry where it was performed.
+  \item In case we receive a write message we will just update the \textit{Value} and obtain an identifier for it. 
+  \item Finally, when we receive a check message, we must compare \textit{Readtime} of the message with our current timestamp, if it is the same we send a ok message (commit), else we send an abort message because the entry has been overwritten while we were performing our transaction.
 \end{itemize}
 
 
@@ -174,13 +176,14 @@ handler(Client, Validator, Store, Reads, Writes) ->
   	\end{lstlisting}
   \end{minipage}
 
-The next function we need to fil is on Handler module. The \textbf{handler} function expects to receive 4 types of messages: read, reply of entry, write and commit message.
+The next function we need to fill is on Handler module. The \textbf{handler} function expects to receive 4 types of messages: read, reply of entry, write and commit message.
 
 \begin{itemize}
-  \item If the message is read, we need to see if we have already written to this entry before using N, 1 and Writes as parameters for keyfind function. In case that is true, we will send \textit{Value} to the Client. Else, we look for the corresponding N Entry and we send a read message to the handler.
-  \item In case we recieve a reply of an Entry, we need to seend teh reading value of the Entry to the Client. Also we need to add this Read to the Client's Reads.
-  \item If the message is write, we look up for an entry and we need to append or update if existed the entry in our Writes list.
-  \item Last message we can receive is commit. With that message we need to send a validate message to the Validator with with \textit{Ref, Reads, Writes and Client} values.
+    \item When we receive a read the first thing we have to do is check our list of writes. If we've written to that entry we know the value it will have. If not, we'll get the PID of the entry we have to read and forward the read message we've got from our client. 
+
+  \item When we get the reply from the Entry we'll send the value to the Client and update the Reads list, as we will need it later in order to check for conflicts.
+  \item If the message is a write, we look up for the entry and append or update the element in our Writes list. We'll need the number and Value\footnote{Both for the read bypass and the Value also when we commit the write}, the PID so that the validator can communicate with the entry.
+  \item Last message we can receive is commit. With that message we need to send a validate message to the Validator with with the whole state for our Client made of a Transaction ID (Ref, used to communicate an ok or an abort), the Reads, the Writes and the PID of the Client in order to communicate with it.
 \end{itemize}
 
 \clearpage
@@ -236,12 +239,8 @@ validator() ->
   \end{minipage}
 
 
-The \textbf{validator} function we wait for a validate message. When we receive that message we need to check the request to every entry we have read and check the results.
+In the \textbf{validator} we wait for a request to validate a transaction. We do it by sending checking that none of our reads has been overwritten while we were doing the transaction. If we get no conflicts we'll make visible the Client's writes and send an ok message. In case of conflict we just send an abort message to the Client.
 
-\begin{itemize}
-  \item In case the case the transaction is OK, we flush writes and finish with a ok message to the Client.
-  \item In case we read stale data, we send to the Client an abort message.
-\end{itemize}
 
 \begin{minipage}{.45\textwidth}
 	\begin{lstlisting}[language=erlang, caption={Template}]
@@ -265,7 +264,7 @@ update(Writes) ->
   \end{minipage}
 
 
-  The next fuction to complete is \textbf{update}. In this fuction we need to send a write message to Entry with the corresponding Value.
+  The next fuction to complete is \textbf{update}. We will call this function whenever we're sure our transaction is correct so we have to update the entries with their new values. To do so we'll just send the new value in a write message.
 
 
 \begin{minipage}{.45\textwidth}
@@ -290,7 +289,7 @@ send_read_checks(Reads, Tag) ->
   	\end{lstlisting}
   \end{minipage}
 
-Last function is \textbf{send\_read\_checks}. In this function we send to the Entry a check message with the Tag and Time for each existing Entry.
+Last function is \textbf{send\_read\_checks}. We ask every entry we've read to confirm whether our previously read data has become stale or not. As we've covered before, this is done by checking if the write id has changed.
 
 \clearpage
 
@@ -324,19 +323,22 @@ server(Validator, Store) ->
   	\end{lstlisting}
   \end{minipage}
 
-  The last module we have to modify is \textbf{server}. In this case \textit{server} function is waiting for open message. When we receive that message, we send to the Client the Validator and Store for the transaction.
+  The last module we have to modify is \textbf{server}. From here we'll control the clients, sending them the Validator and Store that they will use.
 
 \clearpage
 \section{Performance}
 
 We have used a shell script to automatize the testing and make the results easily reproducible. Every plot shows error bars for every point, but they are so small that they are not noticeable in most cases.
 
-As indicated by the assignment we've tried to pick free parameters for each test in a way that lets us see the effect of the parameter under study. 
+As indicated by the assignment we've tried to pick free parameters for each test in a way that lets us see the effect of the parameter under study. We've deviated a bit from the assigment and explored some peculiarities of the algorithm that came up from teacher suggestions. 
+
+In the general case the algorithm performs very intuitively so result's discussion will not be too extensive. Keeping in mind that we're implementing and \textbf{optimistic} algorithm for concurrency control already hints us how it will behave under heavy contention. In addition to that, we have also read the paper discussing the design of Google's \textit{Omega}.
 
 \subsection{Number of concurrent clients in the system}
 \label{sec:numclients}
 
-Increasing the number of clients makes it easier for them to clash, so it decreases the mean success rate pretty fast.
+Increasing the number of clients makes it easier for them to clash, so it decreases the mean success rate pretty fast as can be seen in Figure \ref{fig:numclients}. Sections \ref{sec:magia} and \ref{timey-current-clients} give more information such as the limit for the success rate and the evolution for much higher number of clients respectively.
+
 
 \begin{figure}[H]
   \centering
@@ -344,6 +346,8 @@ Increasing the number of clients makes it easier for them to clash, so it decrea
     \caption{Success rate w.r.t nº of clients}
     \label{fig:numclients}
 \end{figure} 
+
+In general, is safe to assume that if our number of concurrent client is not pretty small compared to the number of entries\footnote{Assuming uniform access among other things} opty is not a suitable option.
 
 
 
@@ -363,7 +367,7 @@ On the other hand, it is also true that our intuition holds for the majority of 
 \clearpage
 \subsection{Number of reads per transaction}
 \label{sec:numreads}
-Doing more reads makes it easier for other clients to update those entries we've used and invalidate our transactions.
+Doing more reads makes it easier for other clients to update those entries we've used and invalidate our transactions. It is so because of two reasons: we're increasing the number of different entries we read and the length of our transaction.
 
 \begin{figure}[H]
   \centering
@@ -375,7 +379,7 @@ Doing more reads makes it easier for other clients to update those entries we've
 \clearpage
 \subsection{Number of writes per transaction}
 \label{sec:numwrites}
-Doing more writes increases the probability of updating an entry that had been previously read by other transaction that had not finished before we commited, so it decreases the success rate.
+Doing more writes increases the probability of updating an entry that had been previously read by other transaction that had not finished before we commited, so it decreases the success rate. It also makes our transaction take longer so the probability of our reads to be overwritten also grows.
 
 \begin{figure}[H]
   \centering
@@ -383,6 +387,7 @@ Doing more writes increases the probability of updating an entry that had been p
     \caption{Success rate w.r.t nº of writes}
     \label{fig:numwrites}
 \end{figure} 
+
 
 \clearpage
 \subsection{Ratio of read/writes}
@@ -396,6 +401,10 @@ The conflicts appear whenever we read outdated data, so having very one sided tr
     \caption{Success rate w.r.t ratio of reads/writes with fixed amount of total operations}
     \label{fig:ratio}
 \end{figure} 
+
+Figure \ref{fig:ratio} shows that the behaviour is pretty simetric.
+
+\clearpage
 
 \subsection{Different percentage of accessed entries w.r.t the total number of entries}
 \label{sec:nose}
@@ -428,12 +437,12 @@ At first we can think that as we increase the number of clients the success rate
 Obviously as the transaction complexity increases the calculation required to obtain this lower bound does too so we can't go much further, but surely anyone skilled enough in combinatorics could.
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.95\linewidth]{plots/numentriesv2.pdf}
+  \includegraphics[width=0.90\linewidth]{plots/numentriesv2.pdf}
     \caption{Success rate w.r.t nº of clients and entries}
     \label{fig:magia}
 \end{figure} 
 
-This also helps explain the situation where adding entries does decrease the mean success rate. It's very unintuitive but considering this lower bound makes it much more obvious. When $\text{clients} \gg \text{entries}$ the conflicts will be unavoidable so the success rate will be very close to the lower bound, and increasing the number of entries decreases that lower bound significantly.
+This also helps explain the situation where adding entries does decrease the mean success rate\footnote{The case where it decreases for a low number of clients but complex transactions as in Figure \ref{fig:numentries} is yet to be understood}. It's very unintuitive but considering this lower bound makes it much more clear. When $\text{clients} \gg \text{entries}$ the conflicts will be unavoidable so the success rate will be very close to the lower bound, and increasing the number of entries decreases that lower bound significantly.
 
 Obviously this is sort of a pathological example and it is not too representative. Surely the lower bound for any realistic transaction is so small that relying on this effect in order to sustain an acceptable lower bound makes no sense. Applying an algorithm for optimistic concurrency when you're expecting massive entry overload and contention would be pretty \textbf{bold}!
 
@@ -448,7 +457,6 @@ In order to check that our intuition is correct we've also checked with 2 Reads 
 \end{figure} 
 
 Overall, noticing this effect after discussing it in the labs session has been very enjoyable. Of course it is not of any practical use as we've already mentioned, but it shows how complex distributed systems are.
-
 
 \clearpage
 \section{Distributed execution}
