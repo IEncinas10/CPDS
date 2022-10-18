@@ -54,7 +54,7 @@
 
 In this seminar we'll implement a transaction server using optimistic concurrency control with backwards validation. We'll study the behaviour of the transaction server under the variation of the different parameters to better understand it. Additionally, we have also explored some of its unintuitive behaviour and understood it. 
 
-We have also carried out both lab extensions, comparing timestamp ordering with optimistic concurrency control and while implementing opty with forward validation.
+We have also carried out both lab extensions, comparing timestamp ordering with optimistic concurrency control while also implementing opty with forward validation.
 
 \section{Code modifications}
 
@@ -607,15 +607,15 @@ With this change in \textit{read} messages, the behaviour on \textit{write} mess
 
 \textit{Check} messages have the bigger change. They will change not only the structure but also all their behaviour. Now we check if the list of Reads is empty, which means that no one had read that entry so we are able to commit our transaction. Otherwise, we abort the transaction if there are some PID in our Read list. We are checking if there is an empty list because before checking validator asks for the entry for deleting the PID of the handler of the transaction.
 
-Also, we will need \textit{block} and \textit{unblock} messages to block/unblock the entry while the checking phase.
+Also, we will need \textit{block} and \textit{unblock} messages to block/unblock the entry while Validator is validating.
 
-The last type of message is \textit{delete}. This message deletes ALL the appearances of the requested PID from the Read list from the entry.
+The last type of message is \textit{delete}. This message deletes every occurrence of the requested PID from the Read list from the entry.
 
 \subsection{Validator}
 
-The validator module has a few changes in addition to the new entry messages structure. We are introducing some functions like "send\_write\_check" and "check\_writes", are responsible for sending check messages to the corresponding entries and receiving their answers to complete or abort the transactions.
+The validator module needed a few changes in addition to the new entry messages structure. We are introducing some functions like ``send\_write\_check'' and ``check\_writes'', are responsible for sending check messages to the corresponding entries and receiving their answers to complete or abort the transactions.
 
-Inside of \texttt{validator} function, we are waiting for a \textit{validate} message from the handler. The first we do (and the first change we find) is that validator asks for blocking and deleting ALL the appearances of the handler's PID from ALL the entries he is attempting to write. Then, it sends the checks messages with the previous functions, and depending on the response (ok or abort), it will update the Writes and accomplish successfully the transaction. Or it will abort the transaction. After these actions, the validator will need to delete also the Reads of that transaction in the corresponding entries in which the handler has read. Finnaly, it will unblock the entries that we blocked before.
+Inside of \texttt{validator} function, we are waiting for a \textit{validate} message from the handler. The first thing we have to do is to block every entry we've written to and deleting every occurrence of the handler's PID from ALL the entries he is attempting to write. Then, it sends the checks messages with the previous functions, and depending on the response (ok or abort), it will update the Writes and finish the transaction successfully or abort it. After these actions, the validator will need to delete also the Reads of that transaction in the corresponding entries in which the handler has read. Finnaly, it will unblock the entries that we blocked before.
 
 
 \subsection{Handler}
@@ -642,7 +642,7 @@ In order to check whether our implementation is working as expected or not, we'v
 
 Regarding the obtained results, they are as expected as our clarifications with the teacher. They show that forward validation performance is lower than backward validation in almost all test we tried. Just in the experiment in which we increase the number of writes per transaction, we obtain better results than backward validation.
 
-In all the figures we show below we have taken the results for backward validation, forward validation blocking entries when checking, and forward validation without that validation (wrong version of forward) to see how the behaviour of the algorithms works and their changes.
+In all the figures we show below we have taken the results for backward validation, forward validation, and forward validation without entry blocking\footnote{As we already obtained results for this incorrect implementation, we thought it would be nice to see the effects in the common plots}.
 
 
 \begin{figure}[H]
