@@ -501,16 +501,21 @@ When we run \textit{Opty} in a Distributed Erlang, the handler is in the client 
 \clearpage
 \section{Other concurrency control techniques}
 
+In this section we'll compare timestamp ordering with optimistic concurrency control. We've tried to be exhaustive but sadly there are some results left to be understood such as the ones shown at Figure \ref{timey:subset}\footnote{Here we're specifically talking about the brown line. We discussed and explored possible causes such as imbalance in the subset distributions and so on but we couldn't come up with a satisfactory explanation}.
+
+There are some notable differences among both approaches. In \textit{Timey} we'll know whether or not our transaction will succeed after every entry involved has been informed of our operations, but we'll have to wait\footnote{Generally speaking, of course we have read-bypass for our own writes} for a response. On the other hand, \textit{Opty} offers us more responsiveness at the cost of making us do useless work in some cases. Timestamp ordering also introduces a new type of conflicts: Write $\rightarrow$ Write. If $\text{Write}_{t_2}$ is processed before $\text{Write}_{t_1}$ (with $t_1 < t_2$) we'll have to reject $\text{Write}_{t_1}$. Timey's extensive bookeeping also allows us to tolerate concurrent Reads and Writes, as we'll apply them in an ordered manner whenever possible.
+
+Even though we're only considering success rates we think that other differences such as the latencies and tolerance to overload are very important when considering this algorithms in a real scenario.
 
 \subsection{Number of concurrent clients in the system}\label{timey-current-clients}
 
 As we mentioned in Section \ref{sec:numclients}, in optimistic control, increasing the number of clients makes clashes more frequent, reducing the success ratio. When we increase the number of clients with timestamp control (timey), the number of clients also reduces the success ratio, but not that drastically, as it is shown in Figure \ref{timey:numclients}. 
 
-In the \textit{timey} algorithm, temptative reads and writes are allocated in an queue ordered by the timestamp, discarding only the transactions that don't follow the consistency checks. In the case of writes the timestamp must be higher than the last write's timestamp and greater or equal than the latest read timestamp.
+In the \textit{timey} algorithm, temptative reads and writes are allocated in an queue ordered by the timestamp, discarding only the transactions that don't satisfy the consistency checks. In the case of writes the timestamp must be higher than the last write's timestamp and greater or equal than the latest read timestamp. For read operations we just have to check that it's timestamp is higher than the last write.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.95\linewidth]{timey_plots/numclients2.pdf}
+  \includegraphics[width=0.75\linewidth]{timey_plots/numclients2.pdf}
     \caption{Success rate w.r.t nº of clients}
     \label{timey:numclients}
 \end{figure} 
@@ -520,9 +525,7 @@ Figure \ref{timey:numclients} indicates that there are also interesting patterns
 \clearpage
 \subsection{Number of entries in the store}
 
-The results show us that the bigger the number of entries for the number of clients, the best the success rate we obtain for both algorithms. \textit{Timey} algorithm results are better than \textit{opty} in the same conditions (same number of reads and writes per transaction). Even in corner cases as $\text{clients} \gg \text{entries}$, the success ratio is better. 
-
-This behaviour is produced by the same cause explained in Section \ref{timey-current-clients}. The lower entries we have the more clashes we obtain. Results show that \textit{timey} has better tolerance.
+The results show us that the bigger the number of entries for the number of clients, the best the success rate we obtain for both algorithms. Both \textit{Timey} and \textit{Opty} show similar evolution, although \textit{Opty} is more sensible to small entry counts because the number of conflicts spikes. 
 
 \begin{figure}[H]
   \centering
@@ -531,13 +534,14 @@ This behaviour is produced by the same cause explained in Section \ref{timey-cur
     \label{timey:numentries}
 \end{figure} 
 
+Figure \ref{timey:numentries} shows that \textit{Timey} can tolerate a smaller number of entries. This is intuitive because \textit{Timey} is designed to deal with conflicts, while \textit{Opty} assumes a small number of them and optimizes for quick response times.
+
 
 \clearpage
 \subsection{Number of reads per transaction}
+\label{timey_sec:numreads}
 
-Doing more reads per transaction decreases the success rate in the \textit{opty} algorithm. Differing from \textit{timey} algorithm behaviour, which maintains a ~98\% of success rate.
-
-This difference is due to how \textit{timey} controls the read transactions. It will read the higher timestamp transaction that is lower than its timestamp, if the transaction is a tentative it will wait until that tentative is published. That mechanism allows the algorithm to not discard a large number of read transactions, only ones that have a lower timestamp than the last write transaction timestamp.
+Doing more reads per transaction decreases the success rate for \textit{Opty} significantly. \textit{Timey} is able to sustain a much higher success rate as shown in Figure \ref{timey:numreads}. This makes sense because \textit{Timey} will keep a list of pending operations and apply them in an ordered manner, and this allows us to tolerate concurrent reads and writes for a small number of writes.
 
 \begin{figure}[H]
   \centering
@@ -548,8 +552,9 @@ This difference is due to how \textit{timey} controls the read transactions. It 
 
 \clearpage
 \subsection{Number of writes per transaction}
+\label{timey_sec:numwrites}
 
-Doing more writes per transaction decreases the success rate in both algorithms. In both cases, we increase the probability of clashes. As the data shows, the \textit{timey} algorithm performs better in success rate for all the number of writes per transaction we have tested.
+Doing more writes per transaction decreases the success rate in both algorithms in a similar way. Figures \ref{timey:numwrites} and \ref{timey:ratio} show that \textit{Timey} can perform worse than \textit{Opty} for very write-intensive transactions. It makes sense as Write $\rightarrow$ Write conflicts are possible now.
 
 \begin{figure}[H]
   \centering
@@ -561,7 +566,8 @@ Doing more writes per transaction decreases the success rate in both algorithms.
 \clearpage
 \subsection{Ratio of read/writes}
 
-Studying the success rate taking into account the ratio of read/writes per instruction, we can say that both algorithms perform better with rates closer to the edges (0-100\%). In only-write (0\% of read operations) \textit{opty} performs better. Both algorithms decrease their success ratios with 10-30\% of read operations, although \textit{timey} performs better (around ~15\% as the maximum difference). From that point, increasing the ratio will produce an increased success ratio in \textit{timey} and maintaining the rate in \textit{opty}. Only in full-read transactions (100\% of reads operations), both algorithms match again.
+\textit{Timey} shows somewhat similar behaviour with respect to \textit{Opty} but performing notably better for read-intensive transactions and a bit worse for write-intensive transactions. This is expected following the conclusions reached at Sections \ref{timey_sec:numreads} and \ref{timey_sec:numwrites}. It is worth noting that \textit{Timey} doesn't get 100\% success rate for write-only transactions as the Write $\rightarrow$ Write conflict is possible.
+
 
 \begin{figure}[H]
   \centering
@@ -573,9 +579,8 @@ Studying the success rate taking into account the ratio of read/writes per instr
 \clearpage
 \subsection{Different percentage of accessed entries w.r.t the total number of entries}
 
-Both algorithms have the same behaviour. The lower the number of entries accessed, the higher the success rate. Fewer entries accessed per client implies having less probability of clashes between transactions. This impact is lower in \textit{timey}, in which we obtain smoother curvesin contrast \textit{opty}.
+Our intuition tells us that increasing the percentage of accessed entries will decrease the success rate as the possibility of conflicting with other clients is higher. This effect can be seen at some test cases in Figure \ref{timey:subset} for both algorithms, although \textit{Timey} shows less variation. We have also encountered a weird case for \textit{Timey} when increasing the number of accessed entries increases the success rate. We have not been able to come up with a satisfactory explanation for this effect.
 
-It is important to remark that \textit{timey} algorithm obtains better results in all the experiments we have done in this section, according to all the results of the experiments we have done previously.
 
 \begin{figure}[H]
   \centering
@@ -583,6 +588,9 @@ It is important to remark that \textit{timey} algorithm obtains better results i
     \caption{Success rate w.r.t percentage of Entries accessible by each client}
     \label{timey:subset}
 \end{figure} 
+
+
+We can conclude that timestamp ordering is more versatile than optimistic concurrency control as expected. Success rates are notably higher in the majority of cases and won't let clients make useless work. It is also true that \textit{Opty} can offer better latencies and could be more suitable for workloads with not many conflicts.
 
 \clearpage
 
@@ -675,6 +683,8 @@ In all the figures we show below we have taken the results for backward validati
 \section{Personal opinion}
 
 \subsection{Ignacio}
+
+The assignment has been interesting. Specially, trying to understand the weird corner cases. Perhaps adding delays in the Clients to fake the work they're doing and compare the different latencies for the algorithms could be a good extension.
 
 \subsection{Adrián}
 
