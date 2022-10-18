@@ -463,7 +463,7 @@ Overall, noticing this effect after discussing it in the labs session has been v
 
 For this experiment, we have made a few changes to generate a process in another node from one unique start function. The changes have been done in the \textit{opty} module. 
 
-To be able to call the distributed server we have to register it and have it on the client side. We have used the piece of code from listing \ref{list:register}
+To be able to call the distributed server we have to register it and have it on the client side. We have used the piece of code from listing \ref{list:register}.
 
 
 \begin{minipage}{\textwidth}
@@ -478,7 +478,8 @@ Figures \ref{fig:2nodes}-\ref{fig:1node} it is shown the execution of the distri
 
 Also, to show the correct behaviour, in figure \ref{fig:1node}, the server node is down and we can not spawn the server in that node, so the algorithm does not work.
 
-\todo[inline]{Adri: If we run this in a Distributed Erlang network, where is the handler running?}
+
+When we run \textit{Opty} in a Distributed Erlang, the handler is in the client node.
 
 
 
