@@ -614,6 +614,8 @@ Inside of \texttt{validator} function, we are waiting for a \textit{validate} me
 
 As mentioned before, this module only had some minor changes. They are focused on following the structure of the changed messages.
 
+\clearpage
+
 \subsection{Message Diagram}
 
 To clarify the messages introduces, a diagram has been created. In figure \ref{fig:diagram} we can see the messages we are passing between the three modules we made changes and their structures.
@@ -625,9 +627,15 @@ To clarify the messages introduces, a diagram has been created. In figure \ref{f
     \label{fig:diagram}
 \end{figure} 
 
+\clearpage
 
 \subsection{Comparison with respect to Backward Validation}
 In order to check whether our implementation is working as expected or not, we've obtained some results that we'll compare the previous ones. 
+
+Regarding the obtained results, they are as expected as our clarifications with the teacher. They show that forward validation performance is lower than backward validation in almost all test we tried. Just in the experiment in which we increase the number of writes per transaction, we obtain better results than backward validation.
+
+In all the figures we show below we have taken the results for backward validation, forward validation blocking entries when checking, and forward validation without that validation (wrong version of forward) to see how the behaviour of the algorithms works and their changes.
+
 
 \begin{figure}[H]
   \centering
