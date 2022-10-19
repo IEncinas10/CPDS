@@ -176,7 +176,7 @@ handler(Client, Validator, Store, Reads, Writes) ->
   	\end{lstlisting}
   \end{minipage}
 
-The next function we need to fill is on Handler module. The \textbf{handler} function expects to receive 4 types of messages: read, reply of entry, write and commit message.
+The next function we need to fill is on Handler module. The \textbf{handler} function expects to receive 4 types of messages: read, reply of entry, write and commit.
 
 \begin{itemize}
     \item When we receive a read the first thing we have to do is check our list of writes. If we've written to that entry we know the value it will have. If not, we'll get the PID of the entry we have to read and forward the read message we've got from our client. 
@@ -427,12 +427,12 @@ On the other hand, there are some special cases where this intuition falls apart
 
 
 \subsection{Is the success rate the same for the different clients?}
-In every plot we show the standard deviation via error bars. They're so small it's difficult to see them, so mainly yes. The only where the clients get different success rates is in the one where they get a subset of accessed entries. It's expected as some clients will get subsets with very little \textit{traffic}, and other clients will compete with many others to access the same entries.
+In every plot we show the standard deviation via error bars. They're so small it's difficult to see them, so mainly yes. The only situation where the clients get different results is shown in Figure \ref{fig:subset}. It's expected as some clients will get subsets with very little \textit{traffic}, and other clients will compete with many others to access the same entries.
 
 \clearpage
 \subsection{Bonus. Minimum success rate per number of entries}
 \label{sec:magia}
-At first we can think that as we increase the number of clients the success rate will go to $0$. It's not such a wild idea but if we think carefully we'll notice that there is a pattern in our transactions that always succeeds: $\text{Write} \rightarrow \text{Read}$. This gives us a lower bound on the amount of transactions that will succeed, as shown in Figure \ref{fig:magia}. In the simple case we've studied, in the $50\%$ of cases our transaction will be a write followed by a read. In order for it to succeed, the read will have to access the entry we've previously written, so the probability of doing so is $\frac{1}{n}$, where $n$ is the number of entries.
+At first we can think that as we increase the number of clients the success rate will go to $0$. It's not such a wild idea but if we think carefully we'll notice that there is a pattern in our transactions that always succeeds: $\text{Write}_i \rightarrow \text{Read}_i \ | \ i \in [1, n]$. This gives us a lower bound on the amount of transactions that will succeed, as shown in Figure \ref{fig:magia}. In the simple case we've studied, in the $50\%$ of cases our transaction will be a write followed by a read. In order for it to succeed, the read will have to access the entry we've previously written, so the probability of doing so is $\frac{1}{n}$, where $n$ is the number of entries.
 
 Obviously as the transaction complexity increases the calculation required to obtain this lower bound does too so we can't go much further, but surely anyone skilled enough in combinatorics could.
 \begin{figure}[H]
