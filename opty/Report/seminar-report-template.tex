@@ -108,12 +108,12 @@ entry(Value, Time) ->
   	\end{lstlisting}
   \end{minipage}
 
-In this module we need to complete the \textbf{entry} function. This function is the responsible of the behaviour of the entries. The fuction will receive 3 types of message: read, write and check. 
+In this module we need to complete the \textbf{entry} function. This function is the responsible of the behaviour of the entries. The function will receive 3 types of message: read, write and check. 
 
 \begin{itemize}
     \item  In case it receives a read message we will send a message with the \textit{Value}. The \textit{Ref} identifies the reading operation while \textit{Time} identifies the latest write performed in the entry and \textit{self()} the entry where it was performed.
   \item In case we receive a write message we will just update the \textit{Value} and obtain an identifier for it. 
-  \item Finally, when we receive a check message, we must compare \textit{Readtime} of the message with our current timestamp, if it is the same we send a ok message (commit), else we send an abort message because the entry has been overwritten while we were performing our transaction.
+  \item Finally, when we receive a check message, we must compare \textit{Readtime} of the message with our current timestamp, if it is the same we send an ok message (commit), else we send an abort message because the entry has been overwritten while we were performing our transaction.
 \end{itemize}
 
 
@@ -183,7 +183,7 @@ The next function we need to fill is on Handler module. The \textbf{handler} fun
 
   \item When we get the reply from the Entry we'll send the value to the Client and update the Reads list, as we will need it later in order to check for conflicts.
   \item If the message is a write, we look up for the entry and append or update the element in our Writes list. We'll need the number and Value\footnote{Both for the read bypass and the Value also when we commit the write}, the PID so that the validator can communicate with the entry.
-  \item Last message we can receive is commit. With that message we need to send a validate message to the Validator with with the whole state for our Client made of a Transaction ID (Ref, used to communicate an ok or an abort), the Reads, the Writes and the PID of the Client in order to communicate with it.
+  \item Last message we can receive is commit. With that message we need to send a validate message to the Validator with the whole state for our Client made of a Transaction ID (Ref, used to communicate an ok or an abort), the Reads, the Writes and the PID of the Client in order to communicate with it.
 \end{itemize}
 
 \clearpage
@@ -264,7 +264,7 @@ update(Writes) ->
   \end{minipage}
 
 
-  The next fuction to complete is \textbf{update}. We will call this function whenever we're sure our transaction is correct so we have to update the entries with their new values. To do so we'll just send the new value in a write message.
+  The next function to complete is \textbf{update}. We will call this function whenever we're sure our transaction is correct so we have to update the entries with their new values. To do so we'll just send the new value in a write message.
 
 
 \begin{minipage}{.45\textwidth}
@@ -330,7 +330,7 @@ server(Validator, Store) ->
 
 We have used a shell script to automatize the testing and make the results easily reproducible. Every plot shows error bars for every point, but they are so small that they are not noticeable in most cases.
 
-As indicated by the assignment we've tried to pick free parameters for each test in a way that lets us see the effect of the parameter under study. We've deviated a bit from the assigment and explored some peculiarities of the algorithm that came up from teacher suggestions. 
+As indicated by the assignment we've tried to pick free parameters for each test in a way that lets us see the effect of the parameter under study. We've deviated a bit from the assignment and explored some peculiarities of the algorithm that came up from teacher suggestions. 
 
 In the general case the algorithm performs very intuitively so result's discussion will not be too extensive. Keeping in mind that we're implementing and \textbf{optimistic} algorithm for concurrency control already hints us how it will behave under heavy contention. In addition to that, we have also read the paper discussing the design of Google's \textit{Omega}.
 
