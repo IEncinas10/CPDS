@@ -1,0 +1,10 @@
+Team #01
+ENCINAS RUBIO, IGNACIO
+JIMÉNEZ GONZÁLEZ, ADRIÁN
+
+* Very comprehensive report!
+* Good analysis in Experiment 3.ii, where having few entries seems to decrease the % of successful transactions, but with more entries the % increases.
+* It is nice that you did both extensions (timey and forward validation)!
+* Forward validation:
+  - handler should ask to remove the read operations of the transaction for each entry if it is requested to abort
+  - validator: you should keep the reference in the check messages (and the corresponding responses)
