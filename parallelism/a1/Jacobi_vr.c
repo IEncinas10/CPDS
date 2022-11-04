@@ -1,7 +1,7 @@
+#include "mpi.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
-#include "mpi.h"
 
 #define _DEBUG 0 /* Define as 1 to get more information */
 
@@ -14,114 +14,113 @@
 #define P 5
 
 /* Hint: Have a look at the auxiliary subroutine in the MPI matrix
-         multiplication code in the slides. */
+	 multiplication code in the slides. */
 
 /* Adjust number of rows per process. */
 int getRowCount(int rowsTotal, int mpiRank, int mpiSize) {
     /* Adjust slack of rows in case rowsTotal is not exactly divisible */
-    return (rowsTotal / mpiSize) + ...... ; /* Statement S21 */
+    return (rowsTotal / mpiSize) + (rowsTotal % mpiSize > mpiRank); /* Statement S21 */
+
+    /* S21: Assignment pdf */
 }
 
-
-int main( argc, argv )
+int main(argc, argv)
 int argc;
 char **argv;
 {
-    int        rank, value, size, errcnt, toterr, i, j, itcnt;
-    int        i_first, i_last;
+    int rank, value, size, errcnt, toterr, i, j, itcnt;
+    int i_first, i_last;
     MPI_Status status;
-    double     diffnorm, gdiffnorm;
-    double     xlocal[(maxn/P)+3][maxn];
-    double     xnew[(maxn/P)+2][maxn];
+    double diffnorm, gdiffnorm;
+    double xlocal[(maxn / P) + 3][maxn];
+    double xnew[(maxn / P) + 2][maxn];
     /* For the gatherv */
-    double     x[maxn][maxn];
-    int        lcnt;
-    int        recvcnts[P];
-    int        displs[P];
-    int        nrows;
+    double x[maxn][maxn];
+    int lcnt;
+    int recvcnts[P];
+    int displs[P];
+    int nrows;
 
-    MPI_Init( &argc, &argv );
+    MPI_Init(&argc, &argv);
 
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-    MPI_Comm_size( MPI_COMM_WORLD, &size );
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     /* xlocal[0][] is lower ghost area, xlocal[i_last+1][] is upper */
     /* Note that first and last processes have one less row of interior
        points */
     i_first = 1;
     /* Remove restriction to have maxn as multiple of P */
-       // This was previously fixed: i_last  = maxn/size;
-    nrows  = getRowCount(maxn, , ); /* Statement S22 */
-    i_last  = nrows;
-    if (rank == 0)        i_first++;
-    if (rank == size - 1) i_last--;
+    // This was previously fixed: i_last  = maxn/size;
+    nrows = getRowCount(maxn, rank, size); /* Statement S22 */
+    i_last = nrows;
+    if (rank == 0)
+	i_first++;
+    if (rank == size - 1)
+	i_last--;
 #if _DEBUG == 1
-    printf(" Process %d: nrows=%d, i_first=%d i_last=%d\n",
-             rank, nrows, i_first, i_last);
+    printf(" Process %d: nrows=%d, i_first=%d i_last=%d\n", rank, nrows, i_first, i_last);
 #endif
 
     /* Fill the data as specified */
-    for (i=i_first; i<=i_last; i++) 
-	for (j=0; j<maxn; j++) 
+    for (i = i_first; i <= i_last; i++)
+	for (j = 0; j < maxn; j++)
 	    xlocal[i][j] = rank;
-    for (j=0; j<maxn; j++) {
-	xlocal[i_first-1][j] = -1;
-	xlocal[i_last+1][j] = -1;
+    for (j = 0; j < maxn; j++) {
+	xlocal[i_first - 1][j] = -1;
+	xlocal[i_last + 1][j] = -1;
     }
 
     itcnt = 0;
     do {
 	/* Note the use of xlocal[i] for &xlocal[i][0] */
 
-        /* Send last local row to next process (process with identifier rank+1)
-           unless I'm the last one (process with identifier size-1). */
-	if (rank < size - 1) 
-	    MPI_Send(xlocal[i_last],maxn,MPI_DOUBLE,rank+1,0,MPI_COMM_WORLD );
-        /* Receive from previous unless I'm the first process (rank==0)
-           and store row in initial row (ghost area) */
+	/* Send last local row to next process (process with identifier rank+1)
+	   unless I'm the last one (process with identifier size-1). */
+	if (rank < size - 1)
+	    MPI_Send(xlocal[i_last], maxn, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD);
+	/* Receive from previous unless I'm the first process (rank==0)
+	   and store row in initial row (ghost area) */
 	if (rank > 0)
-	    MPI_Recv(xlocal[0],maxn,MPI_DOUBLE,rank-1,0,MPI_COMM_WORLD, &status );
-        /* Send 1st local row to previous process unless I'm the 1st process */
-	if (rank > 0) 
-	    MPI_Send(xlocal[1],maxn,MPI_DOUBLE,rank-1,1,MPI_COMM_WORLD );
-        /* Receive from next process and store row in last row in xlocal
-           (ghost area) unless I'm the last process */
-	if (rank < size - 1) 
-	    MPI_Recv(xlocal[i_last+1],maxn,MPI_DOUBLE,rank+1,1,MPI_COMM_WORLD, &status );
-	
+	    MPI_Recv(xlocal[0], maxn, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &status);
+	/* Send 1st local row to previous process unless I'm the 1st process */
+	if (rank > 0)
+	    MPI_Send(xlocal[1], maxn, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD);
+	/* Receive from next process and store row in last row in xlocal
+	   (ghost area) unless I'm the last process */
+	if (rank < size - 1)
+	    MPI_Recv(xlocal[i_last + 1], maxn, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, &status);
+
 	/* Compute new values (but not on boundary) */
-	itcnt ++;
+	itcnt++;
 	diffnorm = 0.0;
-	for (i=i_first; i<=i_last; i++) {
-	    //printf(" Process %d: Loop Compute new values i=%d\n", rank, i);
-	    for (j=1; j<maxn-1; j++) {
-		xnew[i][j] = (xlocal[i][j+1] + xlocal[i][j-1] +
-			      xlocal[i+1][j] + xlocal[i-1][j]) / 4.0;
-		diffnorm += (xnew[i][j] - xlocal[i][j]) * 
-		            (xnew[i][j] - xlocal[i][j]);
+	for (i = i_first; i <= i_last; i++) {
+	    // printf(" Process %d: Loop Compute new values i=%d\n", rank, i);
+	    for (j = 1; j < maxn - 1; j++) {
+		xnew[i][j] = (xlocal[i][j + 1] + xlocal[i][j - 1] + xlocal[i + 1][j] + xlocal[i - 1][j]) / 4.0;
+		diffnorm += (xnew[i][j] - xlocal[i][j]) * (xnew[i][j] - xlocal[i][j]);
 	    }
-        }
+	}
 	/* Only transfer the interior points */
-	//for (i=i_first; i<=i_last; i++) 
-	for (i=i_first; i<=i_last; i++) {
-	    //printf(" Process %d: Loop transfer segment i=%d\n", rank, i);
-	    for (j=1; j<maxn-1; j++) 
+	// for (i=i_first; i<=i_last; i++)
+	for (i = i_first; i <= i_last; i++) {
+	    // printf(" Process %d: Loop transfer segment i=%d\n", rank, i);
+	    for (j = 1; j < maxn - 1; j++)
 		xlocal[i][j] = xnew[i][j];
 	}
 
-	MPI_Allreduce( &diffnorm,&gdiffnorm,1,MPI_DOUBLE,MPI_SUM,
-		       MPI_COMM_WORLD );
-	gdiffnorm = sqrt( gdiffnorm );
-//	if (rank == 0 ) printf( "At iteration %d, diff is %e\n", itcnt, 
-//			       gdiffnorm );
+	MPI_Allreduce(&diffnorm, &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	gdiffnorm = sqrt(gdiffnorm);
+	//	if (rank == 0 ) printf( "At iteration %d, diff is %e\n", itcnt,
+	//			       gdiffnorm );
     } while (gdiffnorm > 1.0e-2 && itcnt < 200);
-    if (rank == 0 ) printf( "At iteration %d, diff is %e\n", itcnt, 
-			       gdiffnorm );
+    if (rank == 0)
+	printf("At iteration %d, diff is %e\n", itcnt, gdiffnorm);
 #if _DEBUG == 2
     printf(" Process %d: Last row (xlocal[%d]) in local segment\n", rank, i_last);
-	    for (j=0; j<maxn; j++) 
-		printf( "%f ", xlocal[i_last][j] );
-	    printf( "\n" );
+    for (j = 0; j < maxn; j++)
+	printf("%f ", xlocal[i_last][j]);
+    printf("\n");
 #endif
 
     /* Collect the data into x and print it */
@@ -129,32 +128,32 @@ char **argv;
     /* Was lcnt = maxn * (maxn / size);
        Adjusted to account for any number of rows in different processes */
     lcnt = maxn * nrows; /* Total number of values in local segment */
-    /* Inform the master process of the number of values in local segment */ 
-    MPI_Gather( &lcnt,  ,   , recvcnts, 1, MPI_INT, 0 ,
-                MPI_COMM_WORLD ); /* Statement S23 */
+    /* Inform the master process of the number of values in local segment */
+    MPI_Gather(&lcnt, 1, MPI_INT, recvcnts, 1, MPI_INT, 0, MPI_COMM_WORLD); /* Statement S23 */
+    /* S23: 1 element per process, of type MPI_INT */
+
     /* Form the displacements */
     displs[0] = 0;
-    for (i=1; i<size; i++) 
-	displs[i] = displs[i-1] + recvcnts[i-1];
+    for (i = 1; i < size; i++)
+	displs[i] = displs[i - 1] + recvcnts[i - 1];
 
     /* Now gather with proper amount of values (lcnt) from each process */
-    MPI_Gatherv( xlocal[1],   , MPI_DOUBLE,
-		x,    , displs, MPI_DOUBLE, 
-		0, MPI_COMM_WORLD ); /* Statement S24 */
+    MPI_Gatherv(xlocal[1], lcnt, MPI_DOUBLE, x, recvcnts, displs, MPI_DOUBLE, 0, MPI_COMM_WORLD); /* Statement S24 */
+    /* S24: maxn elements * nrows = lcnt, recvcnts array */
+
     if (rank == 0) {
 #if _DEBUG == 1
-        for (i=0; i<size; i++) 
-            printf("recvcnts[%d]=%d\tdispls[%d]=%d\n",
-                    i, recvcnts[i], i, displs[i]);
+	for (i = 0; i < size; i++)
+	    printf("recvcnts[%d]=%d\tdispls[%d]=%d\n", i, recvcnts[i], i, displs[i]);
 #endif
-	printf( "Final solution is\n" );
-	for (i=0; i<maxn; i++) {
-	    for (j=0; j<maxn; j++) 
-		printf( "%f ", x[i][j] );
-	    printf( "\n" );
+	printf("Final solution is\n");
+	for (i = 0; i < maxn; i++) {
+	    for (j = 0; j < maxn; j++)
+		printf("%f ", x[i][j]);
+	    printf("\n");
 	}
     }
 
-    MPI_Finalize( );
+    MPI_Finalize();
     return 0;
 }
