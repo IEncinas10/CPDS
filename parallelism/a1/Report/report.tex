@@ -1,0 +1,127 @@
+\documentclass[a4paper, 10pt]{article}
+\usepackage[a4paper,left=2.5cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\usepackage[utf8]{inputenc} % Change according your file encoding
+\usepackage{graphicx}
+%\usepackage[demo]{graphicx}
+\usepackage{url}
+
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{todonotes}
+
+\usepackage{listings}
+
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},  
+    breakatwhitespace=false,         
+    basicstyle=\scriptsize,
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    morekeywords = {MPI_Comm_size},
+}
+
+
+
+\lstset{style=mystyle}
+
+%opening
+\title{\textbf{Parallelism: Assignment 1\\A Distributed Data Structure}}
+\author{Ignacio Encinas Rubio, Adrián Jiménez González\\\{ignacio.encinas,adrian.jimenez.g\}.estudiantat.upc.edu}
+\date{\normalsize\today{}}
+
+\begin{document}
+
+\maketitle
+
+%\begin{center}
+  %Upload your report in PDF format.
+  
+  %Use this LaTeX template to format the report.
+  
+	%A compressed file (.tar.gz) containing all your source code files must be submitted together with this report.
+%\end{center}
+
+\section{Introduction}
+
+This is the report corresponding to the first assignment of the parallelism module, performed by Ignacio Encinas Rubio and Adrián Jiménez González. The source code submitted through Atenea has additional comments that have been omitted in our code listings for clarity's sake.
+
+
+\section{A distributed data structure}
+
+   In this section we will briefly comment the code added to the template version in order to
+   make the algorithm work. We will show the minimum number of lines of code possible to follow the reasoning.
+
+\subsection{Parallel data structure}
+
+
+    The first step just after calling \textit{MPI\_Init} is to get information from the MPI runtime in order to know how many processes are running the same program and our ID inside that group. 
+
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=c, caption={Template S1, S2}]
+	MPI_Comm_rank(,); /* Statement S1 */
+	MPI_Comm_size(,); /* Statement S2 */
+	\end{lstlisting}
+    \end{minipage}\hfill
+    \begin{minipage}{.45\textwidth}
+	\begin{lstlisting}[language=c, caption={Correct S1, S2}]
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
+	MPI_Comm_size(MPI_COMM_WORLD, &size); 
+	\end{lstlisting}
+    \end{minipage}
+
+    Next, we have to figure out how to properly fill these so called ``ghost points''. 
+
+
+    \begin{lstlisting}[language=c, caption={Template S3, S4, S5}]
+    MPI_Recv(xlocal[0],maxn, MPI_DOUBLE, rank - 1, 0, , &status); /* S3 */
+    MPI_Send(xlocal[1], , , rank - 1, 1, ); /* S4 */
+    MPI_Recv(xlocal[maxn/size+1], , , rank + 1, 1, , &status); /* S5 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S3, S4, S5}]
+    MPI_Recv(xlocal[0], maxn, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &status); /* S3 */
+    MPI_Send(xlocal[1], maxn, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD); /* S4 */
+    MPI_Recv(xlocal[maxn/size+1],maxn,MPI_DOUBLE,rank+1,1,MPI_COMM_WORLD,&status); /* S5 */
+    \end{lstlisting}
+    \begin{itemize}
+	\item \textbf{S3}: missing the MPI Communicator to be used.
+	\item \textbf{S4}: missing the nº of elements to be sent (elements per row), the data type and 
+	    the communicator.
+	\item \textbf{S5}: missing the nº of elements, datatype and communicator.
+    \end{itemize}
+
+    Last, we have to figure how to sum the amount of errors detected by each MPI Process. For that, we use \textit{MPI\_Reduce}. Its missing the number of elements to be sent by each process, the datatype, the operation to be performed on the information, the root process and the communicator.
+
+    \begin{lstlisting}[language=c, caption={Template S6}]
+    MPI_Reduce( &errcnt, &toterr,  ,  ,  ,  ,   ); /* S6 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S6}]
+    MPI_Reduce(&errcnt, &toterr, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); /* S6 */
+    \end{lstlisting}
+
+
+
+\subsection{Nonblocking parallel data structure}
+
+\subsection{SendReceive parallel data structure}
+
+\section{A simple Jacobi iterative method}
+
+\subsection{Jacobi}
+
+\subsection{Nonblocking Jacobi}
+
+\subsection{Jacobi vr}
+
+
+\end{document}
