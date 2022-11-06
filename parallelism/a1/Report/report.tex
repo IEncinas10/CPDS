@@ -149,9 +149,7 @@ MPI_Sendrecv(xlocal[1], maxn, MPI_DOUBLE, prev_nbr, 1, xlocal[maxn / size + 1], 
 
 \section{A simple Jacobi iterative method}
 
-\textbf{Q3}: First of all, the space for the halo has to be allocated, and that's why 
-
-\todo[inline]{Figure out why xnew has 1 extra row (should have none?)}
+\textbf{Q3}: First of all, the space for the halo has to be allocated, and that's why we need two extra rows in our xlocal submatrix. Then, we have to avoid computing on the halo by restricting our nested for loops from computing new values for the outer columns. In order to avoid computing new values for the outer rows, we restrict the range tweaking the values i\_first, i\_{last} for our first and last MPI processes, making them ignore their first and last row respectively, because those are part of the halo. 
 
 \subsection{Jacobi}
     In order to make our code clearer, this part of the assignment introduced MPI\_PROC\_NULL. This is useful because it lets us avoid filling our code with ifs considering corner cases. In this case, last process doesn't have a ``next neighbour'' so he can't send him anything. 
@@ -181,15 +179,15 @@ MPI_Allreduce(&diffnorm, &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); /*
 To complete our parallel Jacobi implementation the last step is to gather the disjoint computations performed by every working process. For that we use an MPI\_Gather, where the missing information was: the number of elements to send, the datatype and the root process.
     \begin{lstlisting}[language=c, caption={Template }]
 MPI_Gather( xlocal[1], , , x, maxn * (maxn/size), , , MPI_COMM_WORLD ); /* S15 */
-
     \end{lstlisting}
 
     \begin{lstlisting}[language=c, caption={Correct }]
 MPI_Gather(xlocal[1], maxn * (maxn / size), MPI_DOUBLE, x, maxn * (maxn / size), MPI_DOUBLE, 0, MPI_COMM_WORLD); /* S15 */
-
     \end{lstlisting}
 
 \subsection{Nonblocking Jacobi}
+
+The error in statement 16 is using providing status instead of its address.
     \begin{lstlisting}[language=c, caption={Template S16}]
 MPI_Wait( &r[2], status ); /* S16 (Fix the error) */
     \end{lstlisting}
@@ -198,6 +196,7 @@ MPI_Wait( &r[2], status ); /* S16 (Fix the error) */
 MPI_Wait(&r[2], &status); /* S16 */
     \end{lstlisting}
 
+For the MPI\_Waitall we have to provide the array of requests and array of statuses, and for the MPI\_Wait we need to specify which request we want to wait for. As we want to wait for xlocal[1] to be sent, we go to the MPI call that sends xlocal[1] and wait for the MPI\_Request associated with it. 
     \begin{lstlisting}[language=c, caption={Template S17, S18}]
 MPI_Waitall(nreq, , ); /* S17 */
 MPI_Wait(&r[ ], &status); /* S18 */
@@ -208,6 +207,7 @@ MPI_Waitall(nreq, r, statuses); /* S17 */
 MPI_Wait(&r[3], &status); /* S18 */
     \end{lstlisting}
 
+The MPI\_Iallreduce is missing the local variable for each process that holds the difference norm to be shared with the other processes and the element of r to be used to hold the operation's information.
     \begin{lstlisting}[language=c, caption={Template S19}]
 MPI_Iallreduce( , &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD, &r[ ]); /* S19 */
     \end{lstlisting}
@@ -216,6 +216,7 @@ MPI_Iallreduce( , &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD, &r[ ]); /*
 MPI_Iallreduce(&diffnorm, &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD, &r[0]); /* S19 */
     \end{lstlisting}
 
+MPI\_Igather is missing the sending buffer and the request handle. As we need to retreive every processed element by every process, the starting point is xlocal[1], just after the ghost points comming from other processes, and we'll have to send maxn elements per row times the number of processed rows.
     \begin{lstlisting}[language=c, caption={Template 20}]
 MPI_Igather( , maxn * (maxn/size),MPI_DOUBLE, x, maxn * (maxn/size), MPI_DOUBLE, 0, MPI_COMM_WORLD, &r[ ]); /* S20 */
     \end{lstlisting}
@@ -227,7 +228,9 @@ MPI_Igather(xlocal[1], maxn * (maxn / size), MPI_DOUBLE, x, maxn * (maxn / size)
 
 \subsection{Jacobi vr}
 
-\textbf{Q4}: 
+\textbf{Q4}: $maxn = kP + t \ | \ 0 \leq t < P$ is distributed by assigning $k$ rows for each MPI process. This part is perfectly balanced\footnote{Assuming computational load is independent from the actual data}, but the remainder $t$ can't be equally distributed, so we have to think about a smart way to distribute it. The proposed schema is to give one extra row for each MPI Process\footnote{Starting from the top rank} until we've assigned $t$ extra rows, achieving $maxn$ rows assigned.
+
+The load balancing strategy is determined in the Assignment, so we just have to fill that for S21. In S22 we have to provide the missing parameters, that are: the rank ID of the MPI Process, and the total amount of MPI Processes.
     \begin{lstlisting}[language=c, caption={Template S21, S22}]
 return (rowsTotal / mpiSize) + ...... ; /* Statement S21 */
 nrows  = getRowCount(maxn, , ); /* Statement S22 */
@@ -238,6 +241,10 @@ return (rowsTotal / mpiSize) + (rowsTotal % mpiSize > mpiRank); /* Statement S21
 nrows = getRowCount(maxn, rank, size); /* Statement S22 */
     \end{lstlisting}
 
+In this simple case the first Gather is a bit unnecessary as we could compute everything from the root node, but it might not be the case in some other programs. MPI\_Gather gets from every working process the amount of rows they're gonna process, and stores it into an array. Then, we will use that array in order to do the gather with a variable ammount of elements per process.
+
+The missing information in the MPI\_Gather is: the number of elements to be sent and datatype.
+The missing information in the MPI\_Gatherv is: the number of elements to be sent and the array with the number of elements to be received from every process.
     \begin{lstlisting}[language=c, caption={Template S23, S24}]
 MPI_Gather( &lcnt,  ,   , recvcnts, 1, MPI_INT, 0 , MPI_COMM_WORLD ); /* Statement S23 */
 MPI_Gatherv( xlocal[1],   , MPI_DOUBLE, x,    , displs, MPI_DOUBLE, 0, MPI_COMM_WORLD ); /* Statement S24 */
