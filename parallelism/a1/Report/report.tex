@@ -67,14 +67,14 @@ This is the report corresponding to the first assignment of the parallelism modu
 
     \begin{minipage}{.45\textwidth}
 	\begin{lstlisting}[language=c, caption={Template S1, S2}]
-	MPI_Comm_rank(,); /* Statement S1 */
-	MPI_Comm_size(,); /* Statement S2 */
+MPI_Comm_rank(,); /* Statement S1 */
+MPI_Comm_size(,); /* Statement S2 */
 	\end{lstlisting}
     \end{minipage}\hfill
     \begin{minipage}{.45\textwidth}
 	\begin{lstlisting}[language=c, caption={Correct S1, S2}]
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
-	MPI_Comm_size(MPI_COMM_WORLD, &size); 
+MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
+MPI_Comm_size(MPI_COMM_WORLD, &size); 
 	\end{lstlisting}
     \end{minipage}
 
@@ -82,15 +82,15 @@ This is the report corresponding to the first assignment of the parallelism modu
 
 
     \begin{lstlisting}[language=c, caption={Template S3, S4, S5}]
-    MPI_Recv(xlocal[0],maxn, MPI_DOUBLE, rank - 1, 0, , &status); /* S3 */
-    MPI_Send(xlocal[1], , , rank - 1, 1, ); /* S4 */
-    MPI_Recv(xlocal[maxn/size+1], , , rank + 1, 1, , &status); /* S5 */
+MPI_Recv(xlocal[0],maxn, MPI_DOUBLE, rank - 1, 0, , &status); /* S3 */
+MPI_Send(xlocal[1], , , rank - 1, 1, ); /* S4 */
+MPI_Recv(xlocal[maxn/size+1], , , rank + 1, 1, , &status); /* S5 */
     \end{lstlisting}
 
     \begin{lstlisting}[language=c, caption={Correct S3, S4, S5}]
-    MPI_Recv(xlocal[0], maxn, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &status); /* S3 */
-    MPI_Send(xlocal[1], maxn, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD); /* S4 */
-    MPI_Recv(xlocal[maxn/size+1],maxn,MPI_DOUBLE,rank+1,1,MPI_COMM_WORLD,&status); /* S5 */
+MPI_Recv(xlocal[0], maxn, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &status); /* S3 */
+MPI_Send(xlocal[1], maxn, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD); /* S4 */
+MPI_Recv(xlocal[maxn/size+1],maxn,MPI_DOUBLE,rank+1,1,MPI_COMM_WORLD,&status); /* S5 */
     \end{lstlisting}
     \begin{itemize}
 	\item \textbf{S3}: missing the MPI Communicator to be used.
@@ -102,26 +102,150 @@ This is the report corresponding to the first assignment of the parallelism modu
     Last, we have to figure how to sum the amount of errors detected by each MPI Process. For that, we use \textit{MPI\_Reduce}. Its missing the number of elements to be sent by each process, the datatype, the operation to be performed on the information, the root process and the communicator.
 
     \begin{lstlisting}[language=c, caption={Template S6}]
-    MPI_Reduce( &errcnt, &toterr,  ,  ,  ,  ,   ); /* S6 */
+MPI_Reduce( &errcnt, &toterr,  ,  ,  ,  ,   ); /* S6 */
     \end{lstlisting}
 
     \begin{lstlisting}[language=c, caption={Correct S6}]
-    MPI_Reduce(&errcnt, &toterr, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); /* S6 */
+MPI_Reduce(&errcnt, &toterr, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); /* S6 */
     \end{lstlisting}
 
 
 
 \subsection{Nonblocking parallel data structure}
 
+    \begin{lstlisting}[language=c, caption={Template S7, S8, S9, S10}]
+MPI_Isend( , , MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD, &r[nreq++] ); /* S7 */
+MPI_Irecv( , , MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &r[nreq++] ); /* S8 */
+MPI_Isend( , , MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD, &r[nreq++] ); /* S9 */
+MPI_Irecv( , , MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD,); /* S10 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S7, S8, S9, S10}]
+MPI_Isend(xlocal[maxn / size], maxn, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD, &r[nreq++]); /* S7 */
+MPI_Irecv(xlocal, maxn, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &r[nreq++]); /* S8 */
+MPI_Isend(xlocal[1], maxn, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD, &r[nreq++]); /* S9 */
+MPI_Irecv(xlocal[maxn / size + 1], maxn, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, &r[nreq++]); /* S10 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Template S11}]
+MPI_Reduce( , , 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); /* S11 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S11}]
+MPI_Reduce(&errcnt, &toterr, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); /* S11 */
+    \end{lstlisting}
+
 \subsection{SendReceive parallel data structure}
+
+    For the SendReceive implementation the missing information was: the size of the message, the datatype and the communicator to be used.
+
+    \begin{lstlisting}[language=c, caption={Template S12}]
+MPI_Sendrecv(xlocal[1], , , prev_nbr, 1, xlocal[maxn/size+1], , , next_nbr, 1, , status);   /* S12 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S12}]
+MPI_Sendrecv(xlocal[1], maxn, MPI_DOUBLE, prev_nbr, 1, xlocal[maxn / size + 1], maxn, MPI_DOUBLE, next_nbr, 1, MPI_COMM_WORLD, &status); /* S12 */
+    \end{lstlisting}
 
 \section{A simple Jacobi iterative method}
 
+\textbf{Q3}: First of all, the space for the halo has to be allocated, and that's why 
+
+\todo[inline]{Figure out why xnew has 1 extra row (should have none?)}
+
 \subsection{Jacobi}
+    In order to make our code clearer, this part of the assignment introduced MPI\_PROC\_NULL. This is useful because it lets us avoid filling our code with ifs considering corner cases. In this case, last process doesn't have a ``next neighbour'' so he can't send him anything. 
+    \begin{lstlisting}[language=c, caption={Template S13}]
+next_nbr = ; /* S13 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S13}]
+next_nbr = MPI_PROC_NULL; /* S13 */
+    \end{lstlisting}
+
+
+Next step is to compute the total difference norm from the current matrix to the previous one in order to know when to stop. 
+
+\textbf{Q1}: As every process has to know this, this reduction has to be shared with all of them. Thats why we need ``Allreduce''. 
+
+\textbf{Q2}: The other alternative would be to use MPI\_Reduce and then send the result to every process with a broadcast (for example).
+    \begin{lstlisting}[language=c, caption={Template S14}]
+MPI_Allreduce( &diffnorm, .....); /* Statement S14 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S14}]
+MPI_Allreduce(&diffnorm, &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); /* S14 */
+    \end{lstlisting}
+
+
+To complete our parallel Jacobi implementation the last step is to gather the disjoint computations performed by every working process. For that we use an MPI\_Gather, where the missing information was: the number of elements to send, the datatype and the root process.
+    \begin{lstlisting}[language=c, caption={Template }]
+MPI_Gather( xlocal[1], , , x, maxn * (maxn/size), , , MPI_COMM_WORLD ); /* S15 */
+
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct }]
+MPI_Gather(xlocal[1], maxn * (maxn / size), MPI_DOUBLE, x, maxn * (maxn / size), MPI_DOUBLE, 0, MPI_COMM_WORLD); /* S15 */
+
+    \end{lstlisting}
 
 \subsection{Nonblocking Jacobi}
+    \begin{lstlisting}[language=c, caption={Template S16}]
+MPI_Wait( &r[2], status ); /* S16 (Fix the error) */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S16}]
+MPI_Wait(&r[2], &status); /* S16 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Template S17, S18}]
+MPI_Waitall(nreq, , ); /* S17 */
+MPI_Wait(&r[ ], &status); /* S18 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S17, S18}]
+MPI_Waitall(nreq, r, statuses); /* S17 */
+MPI_Wait(&r[3], &status); /* S18 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Template S19}]
+MPI_Iallreduce( , &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD, &r[ ]); /* S19 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S19}]
+MPI_Iallreduce(&diffnorm, &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD, &r[0]); /* S19 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Template 20}]
+MPI_Igather( , maxn * (maxn/size),MPI_DOUBLE, x, maxn * (maxn/size), MPI_DOUBLE, 0, MPI_COMM_WORLD, &r[ ]); /* S20 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct 20}]
+MPI_Igather(xlocal[1], maxn * (maxn / size), MPI_DOUBLE, x, maxn * (maxn / size), MPI_DOUBLE, 0, MPI_COMM_WORLD, &r[0]); /* S20 */
+    \end{lstlisting}
+
 
 \subsection{Jacobi vr}
 
+\textbf{Q4}: 
+    \begin{lstlisting}[language=c, caption={Template S21, S22}]
+return (rowsTotal / mpiSize) + ...... ; /* Statement S21 */
+nrows  = getRowCount(maxn, , ); /* Statement S22 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S21, S22}]
+return (rowsTotal / mpiSize) + (rowsTotal % mpiSize > mpiRank); /* Statement S21 */
+nrows = getRowCount(maxn, rank, size); /* Statement S22 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Template S23, S24}]
+MPI_Gather( &lcnt,  ,   , recvcnts, 1, MPI_INT, 0 , MPI_COMM_WORLD ); /* Statement S23 */
+MPI_Gatherv( xlocal[1],   , MPI_DOUBLE, x,    , displs, MPI_DOUBLE, 0, MPI_COMM_WORLD ); /* Statement S24 */
+    \end{lstlisting}
+
+    \begin{lstlisting}[language=c, caption={Correct S23, S24}]
+MPI_Gather(&lcnt, 1, MPI_INT, recvcnts, 1, MPI_INT, 0, MPI_COMM_WORLD); /* Statement S23 */
+MPI_Gatherv(xlocal[1], lcnt, MPI_DOUBLE, x, recvcnts, displs, MPI_DOUBLE, 0, MPI_COMM_WORLD); /* S24 */
+    \end{lstlisting}
 
 \end{document}
