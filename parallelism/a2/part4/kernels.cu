@@ -10,11 +10,11 @@ __global__ void gpu_Heat (float *h, float *g, int N) {
 	int x = blockIdx.x * blockDim.x + threadIdx.x;
 	int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-	if(x <= 0 || x >= N - 1 || y <= 0 || y >= N - 1)
+	if(x < 1 || x > N - 2 || y < 1 || y > N - 2)
 	    return;
 
-	g[N * x + y] =  0.25 * (f[N * x       + y - 1] + 
-				f[N * x       + y + 1] + 
-				f[N * (x - 1) + y    ] + 
-				f[N * (x + 1) + y    ]);
+	g[N * x + y] =  0.25 * (h[N * x       + y - 1] + 
+				h[N * x       + y + 1] + 
+				h[N * (x - 1) + y    ] + 
+				h[N * (x + 1) + y    ]);
 }
