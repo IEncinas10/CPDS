@@ -216,9 +216,25 @@ int main( int argc, char *argv[] ) {
 
     // TODO: Allocation on GPU for matrices u and uhelp
     //...
+    
+    cudaMalloc((void **)&dev_u,     np * np * sizeof(float));
+    cudaMalloc((void **)&dev_uhelp, np * np * sizeof(float));
+    // cudamalloc dev_u    , sizeof(float) * np * np 
+    // cudamalloc dev_uhelp, sizeof(float) * np * np
+    
+    //
 
     // TODO: Copy initial values in u and uhelp from host to GPU
     //...
+    // cudaMemcpy param.u     -> dev_u    , hosttodevice
+    // cudaMemcpy param.uhelp -> dev_uhelp, hosttodevice
+
+    cudaMemcpy(dev_u, param.u, np * np * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_uhelp, param.uhelp, np * np * sizeof(float), cudaMemcpyHostToDevice);
+
+    //param.u = p
+    //param.uhelp
+    //
 
     iter = 0;
     while(1) {
@@ -227,6 +243,14 @@ int main( int argc, char *argv[] ) {
 
         // TODO: residual is computed on host, we need to get from GPU values computed in u and uhelp
         //...
+
+	// cudaMemcpy dev_u     -> param.u    , devicetohost
+	// cudaMemcpy dev_uhelp -> param.uhelp, devicetohost
+	cudaMemcpy(param.u, dev_u, np * np * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(param.uhelp, dev_uhelp, np * np * sizeof(float), cudaMemcpyDeviceToHost);
+
+	//
+
 	residual = cpu_residual (param.u, param.uhelp, np, np);
 
 	float * tmp = dev_u;
@@ -244,9 +268,17 @@ int main( int argc, char *argv[] ) {
 
     // TODO: get result matrix from GPU
     //...
+    // cudaMemcpy dev_uhelp     -> param.u    , devicetohost
+    //
+    cudaMemcpy(param.u, dev_u, np * np * sizeof(float), cudaMemcpyDeviceToHost);
 
     // TODO: free memory used in GPU
     //...
+    // cudafree dev_u, dev_uhelp
+    cudaFree(dev_u);
+    cudaFree(dev_uhelp);
+    //
+
 
     cudaEventRecord( stop, 0 );     // instrument code to measue end time
     cudaEventSynchronize( stop );
