@@ -228,7 +228,7 @@ MPI_Igather(xlocal[1], maxn * (maxn / size), MPI_DOUBLE, x, maxn * (maxn / size)
 
 \subsection{Jacobi vr}
 
-\textbf{Q4}: $maxn = kP + t \ | \ 0 \leq t < P$ is distributed by assigning $k$ rows for each MPI process. This part is perfectly balanced\footnote{Assuming computational load is independent from the actual data}, but the remainder $t$ can't be equally distributed, so we have to think about a smart way to distribute it. The proposed schema is to give one extra row for each MPI Process\footnote{Starting from the top rank} until we've assigned $t$ extra rows, achieving $maxn$ rows assigned.
+\textbf{Q4}: $maxn = kP + t \ | \ 0 \leq t < P$ is distributed by assigning $k$ rows for each MPI process. This part is perfectly balanced\footnote{Assuming computational load is independent from the actual data}, but the remainder $t$ can't be equally distributed, so we have to think about a smart way to distribute it. The proposed schema is to give one extra row for each MPI Process\footnote{From rank 0 to rank $t - 1$} until we've assigned $t$ extra rows, achieving $maxn$ rows assigned.
 
 The load balancing strategy is determined in the Assignment, so we just have to fill that for S21. In S22 we have to provide the missing parameters, that are: the rank ID of the MPI Process, and the total amount of MPI Processes.
     \begin{lstlisting}[language=c, caption={Template S21, S22}]
