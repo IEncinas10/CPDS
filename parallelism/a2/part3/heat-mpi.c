@@ -131,7 +131,7 @@ int main( int argc, char *argv[] )
             iter++;
             
             double res;
-            MPI_Allreduce(&res, &residual, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            MPI_Allreduce(&residual, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
             residual = res;
 
@@ -210,14 +210,14 @@ int main( int argc, char *argv[] )
         printf("uhelp and u received \n");
         printf("Values rows = %d, columns = %d \n", rows, columns);
 
-        if(myid == numprocs-1){
+        /*if(myid == numprocs-1){
             for(int i = 0; i < rows+2; i++){
                 for(int j =0; j< columns+2; j++){
                     printf("%1.1f ", u[i*(columns+2)+j]);
                 }
                 printf("\n");
             }
-        }
+        }*/
 
         iter = 0;
         while(1) {
@@ -255,8 +255,8 @@ int main( int argc, char *argv[] )
             iter++;
 
             double res;
-            MPI_Allreduce(&res, &residual, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
+            MPI_Allreduce(&residual, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            printf("%f", res);
             residual = res;
             
 
