@@ -129,12 +129,17 @@ int main( int argc, char *argv[] )
             }
 
             iter++;
+            
+            double res;
+            MPI_Allreduce(&res, &residual, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+            residual = res;
 
             // solution good enough ?
-            //if (residual < 0.00005) break;
+            if (residual < 0.00005) break;
 
             // max. iteration reached ? (no limit with maxiter=0)
-            if (/*param.maxiter>0 && */iter>=param.maxiter) break; 
+            if (param.maxiter>0 && iter>=param.maxiter) break; 
         }
 
         //receive image from workers
@@ -249,11 +254,17 @@ int main( int argc, char *argv[] )
 
             iter++;
 
+            double res;
+            MPI_Allreduce(&res, &residual, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+            residual = res;
+            
+
             // solution good enough ?
-            //if (residual < 0.00005) break;
+            if (residual < 0.00005) break;
 
             // max. iteration reached ? (no limit with maxiter=0)
-            if (/*maxiter>0 &&*/ iter>=maxiter) break;
+            if (maxiter>0 && iter>=maxiter) break;
         }
         printf("ENVIANDO");
         MPI_Send(&u[columns+2], (columns + 2)*(rows), MPI_DOUBLE, 0, myid, MPI_COMM_WORLD);
