@@ -145,7 +145,7 @@ int main( int argc, char *argv[] )
         //receive image from workers
         printf("Receiving...");
         for(int i = 1; i < numprocs; i++){
-            MPI_Recv(&param.u[np*rowsWorkers*i+1], np*(rowsWorkers), MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
+            MPI_Recv(&param.u[np*rowsWorkers*i], np*(rowsWorkers), MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
         }
 
         // Flop count after iter iterations
