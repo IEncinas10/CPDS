@@ -16,8 +16,11 @@ double relax_jacobi (double *u, double *utmp, unsigned sizex, unsigned sizey)
     bx = sizex/nbx;
     nby = NB;
     by = sizey/nby;
+
+
     for (int ii=0; ii<nbx; ii++)
         for (int jj=0; jj<nby; jj++) 
+        #pragma omp parallel for private (ii, jj, diff) reduction(+:sum)
             for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) 
                 for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
 	            utmp[i*sizey+j]= 0.25 * (u[ i*sizey     + (j-1) ]+  // left
