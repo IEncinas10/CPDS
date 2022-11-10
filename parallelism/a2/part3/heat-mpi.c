@@ -119,7 +119,7 @@ int main( int argc, char *argv[] )
                     MPI_Send(&param.u[np*rowsWorkers], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD);
                     MPI_Recv(&param.u[np*(rowsWorkers+1)], np, MPI_DOUBLE, myid+1, 0,  MPI_COMM_WORLD, &status);
                     //printf("MAGIC\n");
-                    residual = relax_jacobi(param.u, param.uhelp, np, rowsWorkers+2);
+                    residual = relax_jacobi(param.u, param.uhelp, rowsWorkers + 2, np);
                 // Copy uhelp into u
                     double *aux = param.u;
                     param.u = param.uhelp;
@@ -248,7 +248,7 @@ int main( int argc, char *argv[] )
                     //if(myid == 1)
                         //printf("%d\n", iter);
 
-                    residual = relax_jacobi(u, uhelp, np, rows+2);
+                    residual = relax_jacobi(u, uhelp, rows + 2, np);
                 // Copy uhelp into u
                 /*for (int i=1; i<rows+1; i++)
                         for (int j=1; j<columns+1; j++)
