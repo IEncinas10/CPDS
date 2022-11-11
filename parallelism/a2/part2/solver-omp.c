@@ -84,28 +84,45 @@ double relax_redblack (double *u, unsigned sizex, unsigned sizey)
 
 /*
  * Blocked Gauss-Seidel solver: one iteration step
- */
+ */ 
 double relax_gauss (double *u, unsigned sizex, unsigned sizey)
 {
-    double unew, diff, sum=0.0;
+    double unew, diff, sum = 0.0;
     int nbx, bx, nby, by;
 
     nbx = NB;
     bx = sizex/nbx;
     nby = NB;
     by = sizey/nby;
-    for (int ii=0; ii<nbx; ii++)
-        for (int jj=0; jj<nby; jj++) 
-            for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) 
-                for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
-	            unew= 0.25 * (    u[ i*sizey	+ (j-1) ]+  // left
-				      u[ i*sizey	+ (j+1) ]+  // right
-				      u[ (i-1)*sizey	+ j     ]+  // top
-				      u[ (i+1)*sizey	+ j     ]); // bottom
-	            diff = unew - u[i*sizey+ j];
-	            sum += diff * diff; 
-	            u[i*sizey+j]=unew;
+
+    int block[nbx][nby];
+
+    #pragma omp parallel
+    #pragma omp single
+    {
+        for (int ii=0; ii<nbx; ii++) {
+            for (int jj=0; jj<nby; jj++) {
+                #pragma omp task depend(in: block[ii-1][jj], block[ii][jj-1]) depend(out: block[ii][jj]) private(diff, unew) 
+                {
+                    double omp_sum = 0.0;
+                    for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) {
+                        for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
+                        unew= 0.25 * (    u[ i*sizey	+ (j-1) ]+  // left
+                            u[ i*sizey	+ (j+1) ]+  // right
+                            u[ (i-1)*sizey	+ j     ]+  // top
+                            u[ (i+1)*sizey	+ j     ]); // bottom
+                        diff = unew - u[i*sizey+ j];
+                        omp_sum += diff * diff; 
+                        u[i*sizey+j]=unew;
+                        } 
+                    }
+                    #pragma omp atomic
+                    sum += omp_sum;
                 }
+            }
+        }
+    }
+    
 
     return sum;
 }
