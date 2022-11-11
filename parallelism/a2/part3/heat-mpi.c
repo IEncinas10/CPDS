@@ -136,10 +136,7 @@ int main( int argc, char *argv[] )
 
             iter++;
             
-            double res;
-            MPI_Allreduce(&residual, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-            residual = res;
+            MPI_Allreduce(MPI_IN_PLACE, &residual, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
             // solution good enough ?
             if (residual < 0.00005) break;
@@ -252,10 +249,7 @@ int main( int argc, char *argv[] )
 
             iter++;
 
-            double res;
-            MPI_Allreduce(&residual, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-            residual = res;
+            MPI_Allreduce(MPI_IN_PLACE, &residual, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             
 
             // solution good enough ?
