@@ -92,11 +92,6 @@ int main( int argc, char *argv[] )
         np = param.resolution + 2;
         rowsWorkers = param.resolution / numprocs;
 
-        for(int i = 0; i < np; i++){
-            for(int j = 0; j < np; j++)
-                printf("%1.1f ", param.u[i*np + j]);
-            printf("\n");
-        }
 
         // starting time
         runtime = wtime();
@@ -118,8 +113,13 @@ int main( int argc, char *argv[] )
             case 0: // JACOBI
                     MPI_Send(&param.u[np*rowsWorkers], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD);
                     MPI_Recv(&param.u[np*(rowsWorkers+1)], np, MPI_DOUBLE, myid+1, 0,  MPI_COMM_WORLD, &status);
+<<<<<<< HEAD
                     //printf("MAGIC\n");
                     residual = relax_jacobi(param.u, param.uhelp, rowsWorkers + 2, np);
+=======
+
+                    residual = relax_jacobi(param.u, param.uhelp, rowsWorkers+2, np);
+>>>>>>> cc80ef0 (jacobi mpi clean and fixed)
                 // Copy uhelp into u
                     double *aux = param.u;
                     param.u = param.uhelp;
@@ -149,7 +149,7 @@ int main( int argc, char *argv[] )
         }
 
         //receive image from workers
-        printf("Receiving...");
+
         for(int i = 1; i < numprocs; i++){
             MPI_Recv(&param.u[np*(rowsWorkers*i + 1)], np*(rowsWorkers), MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
         }
@@ -200,7 +200,6 @@ int main( int argc, char *argv[] )
         np = columns + 2;
         rows = columns / numprocs;
 
-        printf("Allocating memory...\n");
         // allocate memory for worker
         double * u = calloc( sizeof(double),(rows+2)*(columns+2) );
         double * uhelp = calloc( sizeof(double),(rows+2)*(columns+2) );
@@ -209,29 +208,13 @@ int main( int argc, char *argv[] )
             fprintf(stderr, "Error: Cannot allocate memory\n");
             return 0;
         }
-        printf("Memory allocated\n");
+
         // fill initial values for matrix with values received from master
         MPI_Recv(&u[0], (rows+2)*(columns+2), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
         MPI_Recv(&uhelp[0], (rows+2)*(columns+2), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
-        printf("uhelp and u received \n");
-        printf("Values rows = %d, columns = %d \n", rows, columns);
 
-        /*if(myid == numprocs-1){
-            for(int i = 0; i < rows+2; i++){
-                for(int j =0; j< columns+2; j++){
-                    printf("%1.1f ", u[i*(columns+2)+j]);
-                }
-                printf("\n");
-            }
-        }*/
 
-        if(myid == 3)
-        for(int i = 0; i < rows+2; i++){
-            for(int j = 0; j < columns+2; j++)
-                printf("%d ", i*(columns+2) + j);
-            printf("\n");
-        }
-        printf("\n\n\n\nALE A CURRAR\n\n\n\n");
+
         iter = 0;
         while(1) {
         switch( algorithm ) {
@@ -240,19 +223,21 @@ int main( int argc, char *argv[] )
 
                     MPI_Recv(&u[0], columns + 2, MPI_DOUBLE, myid-1, 0, MPI_COMM_WORLD, &status);
                     
-                    //printf("alo");
                     if(myid != numprocs - 1){
                         MPI_Send(&u[rows*(columns+2)], columns+2, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD);
                         MPI_Recv(&u[(rows+1)*(columns + 2)], columns+2, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, &status);
                     }
-                    //if(myid == 1)
-                        //printf("%d\n", iter);
 
+<<<<<<< HEAD
                     residual = relax_jacobi(u, uhelp, rows + 2, np);
                 // Copy uhelp into u
                 /*for (int i=1; i<rows+1; i++)
                         for (int j=1; j<columns+1; j++)
                         u[ i*np+j ] = uhelp[ i*np+j ];*/
+=======
+                    residual = relax_jacobi(u, uhelp, rows+2, np);
+
+>>>>>>> cc80ef0 (jacobi mpi clean and fixed)
                     double *aux = u;//cambiado para evitar porblemas con los indices...
                     u = uhelp;
                     uhelp = aux;
@@ -269,7 +254,7 @@ int main( int argc, char *argv[] )
 
             double res;
             MPI_Allreduce(&residual, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            //printf("%f", res);
+
             residual = res;
             
 
@@ -279,7 +264,7 @@ int main( int argc, char *argv[] )
             // max. iteration reached ? (no limit with maxiter=0)
             if (maxiter>0 && iter>=maxiter) break;
         }
-        printf("ENVIANDO");
+
         MPI_Send(&u[columns+2], (columns + 2)*(rows), MPI_DOUBLE, 0, myid, MPI_COMM_WORLD);
 
 
