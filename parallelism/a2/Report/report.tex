@@ -54,7 +54,29 @@
 
 \section{Parallelization}
 
+In this section we will explain the steps we followed to achieve the parallelization of both solvers, Jacobi and Gauss-Seidel. In the following sections, we are going to show how the parallel codes have been done in each Parallel Programming Model for each solver.
+
 \subsection{OpenMP}
+
+  For parallelize the code for Jacobi solver with OpenMP, we just needed to modify the \textit{solver-omp.c} file. The \textit{heat-omp.c} file did not need any modification. Jacobi solver does not have any data dependency, so the parallelization can be achieved with a \texttt{\#pragma} shown above.
+
+\begin{lstlisting}[language=c, caption={OpenMP pragma for Jacobi parallelization}]
+    #pragma omp parallel for collapse(2) private(diff) reduction(+:sum)
+    for (int ii=0; ii<nbx; ii++)
+        for (int jj=0; jj<nby; jj++) 
+            for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) 
+                for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
+	                  utmp[i*sizey+j]= 0.25 * (u[ i*sizey     + (j-1) ]+  // left
+					          u[ i*sizey     + (j+1) ]+  // right
+				            u[ (i-1)*sizey + j     ]+  // top
+				            u[ (i+1)*sizey + j     ]); // bottom
+	            diff = utmp[i*sizey+j] - u[i*sizey + j];
+	            sum += diff * diff; 
+	        }
+\end{lstlisting}
+
+  For Jacobi, we do not need the first 2 outer \texttt{for} loops to be done in ``blocks", this will be useful for Gauss-Seidel. So we will fuse both fors with the \texttt{collapse(2)} clause. The next clause we use is \texttt{private(diff)} in which we specify that variable to be allocated for each thread to have their own value per thread. Last, we have the \texttt{reduction(+:sum)} specifying the way we want to reduce the values obtained by each thread. In this case, we want to sum (+) the values for each \texttt{sum} when we finish the parallel section in order to return the residual of the solver.
+
 
 \subsection{MPI}
 
