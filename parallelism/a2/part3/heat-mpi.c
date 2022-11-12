@@ -20,10 +20,12 @@ int main( int argc, char *argv[] )
     char *resfilename;
     int myid, numprocs;
     MPI_Status status;
+    
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+
 
     if (myid == 0) {
       printf("I am the master (%d) and going to distribute work to %d additional workers ...\n", myid, numprocs-1);
@@ -113,13 +115,8 @@ int main( int argc, char *argv[] )
             case 0: // JACOBI
                     MPI_Send(&param.u[np*rowsWorkers], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD);
                     MPI_Recv(&param.u[np*(rowsWorkers+1)], np, MPI_DOUBLE, myid+1, 0,  MPI_COMM_WORLD, &status);
-<<<<<<< HEAD
-                    //printf("MAGIC\n");
-                    residual = relax_jacobi(param.u, param.uhelp, rowsWorkers + 2, np);
-=======
 
                     residual = relax_jacobi(param.u, param.uhelp, rowsWorkers+2, np);
->>>>>>> cc80ef0 (jacobi mpi clean and fixed)
                 // Copy uhelp into u
                     double *aux = param.u;
                     param.u = param.uhelp;
@@ -130,13 +127,21 @@ int main( int argc, char *argv[] )
                 residual = relax_redblack(param.u, np, np);
                 break;
             case 2: // GAUSS
-                residual = relax_gauss(param.u, np, np);
+                
+                residual = relax_gauss(param.u, rowsWorkers+2, np, myid, numprocs);
+                
+                //MPI_Send(&u[rowsWorkers*(np)], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD);
+                MPI_Recv(&param.u[(rowsWorkers + 1)*(np)], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, &status);
+                
                 break;
             }
-
+ 
             iter++;
             
-            MPI_Allreduce(MPI_IN_PLACE, &residual, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            double res;
+            MPI_Allreduce(&residual, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+            residual = res;
 
             // solution good enough ?
             if (residual < 0.00005) break;
@@ -144,6 +149,7 @@ int main( int argc, char *argv[] )
             // max. iteration reached ? (no limit with maxiter=0)
             if (param.maxiter>0 && iter>=param.maxiter) break; 
         }
+        
 
         //receive image from workers
 
@@ -153,7 +159,7 @@ int main( int argc, char *argv[] )
 
         // Flop count after iter iterations
         flop = iter * 11.0 * param.resolution * param.resolution;
-        // stopping time
+        // stopping timei*(bx-1) + jj*by
         runtime = wtime() - runtime;
 
         fprintf(stdout, "Time: %04.3f ", runtime);
@@ -212,6 +218,7 @@ int main( int argc, char *argv[] )
 
 
 
+
         iter = 0;
         while(1) {
         switch( algorithm ) {
@@ -225,16 +232,8 @@ int main( int argc, char *argv[] )
                         MPI_Recv(&u[(rows+1)*(columns + 2)], columns+2, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, &status);
                     }
 
-<<<<<<< HEAD
-                    residual = relax_jacobi(u, uhelp, rows + 2, np);
-                // Copy uhelp into u
-                /*for (int i=1; i<rows+1; i++)
-                        for (int j=1; j<columns+1; j++)
-                        u[ i*np+j ] = uhelp[ i*np+j ];*/
-=======
                     residual = relax_jacobi(u, uhelp, rows+2, np);
-
->>>>>>> cc80ef0 (jacobi mpi clean and fixed)
+ 
                     double *aux = u;//cambiado para evitar porblemas con los indices...
                     u = uhelp;
                     uhelp = aux;
@@ -243,13 +242,27 @@ int main( int argc, char *argv[] )
                 residual = relax_redblack(u, np, np);
                 break;
             case 2: // GAUSS
-                residual = relax_gauss(u, np, np);
+
+
+                // relax_gauss RECIBE los bloques de arriba de manera correcta
+                residual = relax_gauss(u, rows + 2, np, myid, numprocs);   
+
+                MPI_Send(&u[np], np, MPI_DOUBLE, myid-1, 0, MPI_COMM_WORLD);
+                if(myid != numprocs - 1){
+                    MPI_Recv(&u[(rows+1)*np], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, &status);
+                }
+
+                // RECIBIR HALO DE ABAJO
+                // ENVIAR HALO HACIA ARRIBA             
                 break;
             }
 
             iter++;
 
-            MPI_Allreduce(MPI_IN_PLACE, &residual, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            double res;
+            MPI_Allreduce(&residual, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+            residual = res;
             
 
             // solution good enough ?
@@ -259,7 +272,8 @@ int main( int argc, char *argv[] )
             if (maxiter>0 && iter>=maxiter) break;
         }
 
-        MPI_Send(&u[columns+2], (columns + 2)*(rows), MPI_DOUBLE, 0, myid, MPI_COMM_WORLD);
+
+        MPI_Send(&u[np], np*rows, MPI_DOUBLE, 0, myid, MPI_COMM_WORLD);
 
 
 

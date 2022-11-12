@@ -51,7 +51,7 @@ double relax_redblack( double *u,
 		  unsigned sizex, unsigned sizey );
 
 double relax_gauss( double *u, 
-		  unsigned sizex, unsigned sizey );
+		  unsigned sizex, unsigned sizey, int rank, int numprocs );
 
 double relax_jacobi( double *u, double *utmp,
 		   unsigned sizex, unsigned sizey ); 
