@@ -271,7 +271,7 @@ int main(int argc, char *argv[]) {
 	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
 	    float gpu_red = 1000000;
-	    //reduce<<<1, num_blocks / 2 + num_blocks % 2>>>(dev_block_red, dev_gpu_red, num_blocks);
+	    //Kernel06<<<1, num_blocks/2>>>(dev_block_red, dev_gpu_red);
 	    //cudaDeviceSynchronize(); // Wait for compute device to finish.
 	    //cudaMemcpy(&gpu_red, dev_gpu_red, sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -282,7 +282,7 @@ int main(int argc, char *argv[]) {
 		residual_gpu += block_red[i];
 	    }
 
-	    if (gpu_red != -1 && abs(residual_gpu - gpu_red) > 0.1) {
+	    if (abs(residual_gpu - gpu_red) > 0.001) {
 		//printf("[%d blocks] gpu_red = %f, gpu_cpu_red = %f\n", num_blocks, gpu_red,
 		       //residual_gpu);
 		gpu_cpu_differ++;
