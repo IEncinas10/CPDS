@@ -100,6 +100,7 @@ respecting the dependencies of that solver. We introduce a new proxy variable \t
     int b[nbx][nby];
 
 #pragma omp parallel
+#pragma omp single
 {
   for (int ii=0; ii<nbx; ii++) {
     for (int jj=0; jj<nby; jj++) {
@@ -206,14 +207,64 @@ residual = relax_jacobi(u, uhelp, rows+2, np);
 \end{lstlisting}
 
 
-
-
-
-
-
-
-
 \subsubsection{Gauss-Seidel}
+
+For the parallelization of this solver, most of the work have been already done for Jacobi method. Parts like splitting the data between nodes, reduction of the residual for breaking condition and merging the computed image of children nodes in the parent node are common to Gauss-Seidel. Only the communications between nodes in the iterative part are different, as it is shown in Listing \ref{lst:gauss-mpi}.
+
+\begin{lstlisting}[language=c, caption={Communications between nodes Gauss-Seidel}, label={lst:gauss-mpi}]
+/* ROOT NODE (rank == 0) */
+residual = relax_gauss(param.u, rowsWorkers+2, np, myid, numprocs);
+ 
+MPI_Recv(&param.u[(rowsWorkers + 1)*(np)], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, &status);
+
+/* (rank != 0) */
+
+residual = relax_gauss(u, rows + 2, np, myid, numprocs);   
+
+MPI_Send(&u[np], np, MPI_DOUBLE, myid-1, 0, MPI_COMM_WORLD);
+if(myid != numprocs - 1){
+  MPI_Recv(&u[(rows+1)*np], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, &status);
+}
+
+residual = relax_jacobi(u, uhelp, rows+2, np);
+\end{lstlisting}
+
+For Gauss-Seidel we have also different types of nodes in order to send or receive between iterations. This communications only appears when the Gauss solver has finished with all the blocks of its node:
+
+\begin{itemize}
+  \item Node 0: only receives the lower boundary from next node.
+  \item Intermediate nodes: receives from next node the lower boundary and sends to the previous node the first computed row.
+  \item Last node: only sends to the previous node the first computed row.
+\end{itemize}
+
+
+The communications between nodes after a block is computed are done inside the Gauss-Seidel's kernel. We use the outer for loops of the kernel that compute the solver in blocks to send and receive the necessary information for each block. To be able to differentiate the behaviour of the different nodes that we have, \textit{relax\_gauss} definition has been modified to bring the solver the context of which node is executing and it make the different communications. We also need to initialize \texttt{\&status} variable for the communications. See Listing \ref{lst:gauss-mpi-kernel}.
+
+\begin{lstlisting}[language=c, caption={Communications between nodes Gauss-Seidel inside kernel}, label={lst:gauss-mpi-kernel}]
+double relax_gauss(double *u, unsigned sizex, unsigned sizey, int rank, int numprocs) //rank and numprocs passed as parameters
+{
+MPI_Status status;
+for (int ii=0; ii<nbx; ii++)
+   for (int jj=0; jj<nby; jj++) {
+     if(ii == 0 && rank != 0){
+       MPI_Recv(&u[jj * by], by, MPI_DOUBLE, rank-1, jj, MPI_COMM_WORLD, &status);
+     }
+     for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) 
+       for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
+        /* COMPUTE EQUATION */
+       }
+     if(ii == nbx - 1 && rank != numprocs - 1) {
+       MPI_Send(&u[((sizex - 2) * sizey) + jj*by], by, MPI_DOUBLE, rank+1, jj, MPI_COMM_WORLD);
+    }
+  } 
+}
+\end{lstlisting}
+
+As we can see, we use ii to differentiate if the block is in the top side so the block must receive the upper boundary from previous node in case its rank is different to 0. Once we receive this data, we can compute the equation.
+
+Blocks of the same node do not need to send or receive data between them as they are in shared memory. The blocks of the bottom side (\texttt{ii == nbx-1}) must send their last computed row to the next node in order to the upper block of the next node could start its execution. In this way we obtain the wavefront behaviour.
+
+
 
 \subsection{CUDA}
 
