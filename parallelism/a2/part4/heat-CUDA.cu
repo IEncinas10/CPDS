@@ -37,6 +37,7 @@ int coarsen(float *uold, unsigned oldx, unsigned oldy, float *unew, unsigned new
 __global__ void gpu_Heat(float *h, float *g, int N);
 __global__ void gpu_Heat_diff(float *h, float *g, float *diff, int N);
 __global__ void reduce(float *idata, float *odata, int N);
+__global__ void Kernel06(float *g_idata, float *g_odata);
 
 #define NB 8
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -218,23 +219,29 @@ int main(int argc, char *argv[]) {
     cudaEventRecord(start, 0);
     cudaEventSynchronize(start);
 
-    float *dev_u, *dev_uhelp, *dev_diff, *dev_block_red;
+    float *dev_u, *dev_uhelp, *dev_diff, *dev_block_red, *dev_gpu_red;
 
     // TODO: Allocation on GPU for matrices u and uhelp
     //...
 
     cudaMalloc((void **)&dev_u, np * np * sizeof(float));
     cudaMalloc((void **)&dev_uhelp, np * np * sizeof(float));
-    cudaMalloc((void **)&dev_diff, np * np * sizeof(float));
+    cudaMalloc((void **)&dev_diff, (np - 2) * (np - 2) * sizeof(float));
 
     const unsigned threads_per_block = Block_Dim * Block_Dim;
     const unsigned num_blocks = Grid_Dim * Grid_Dim;
-    cudaMalloc((void **)&dev_block_red, num_blocks * sizeof(float));
 
-    float block_red[num_blocks];
+    const unsigned num_blocks_alloc = 4*num_blocks;
+
+    cudaMalloc((void **)&dev_block_red, num_blocks_alloc * sizeof(float));
+    // set to 0 for the extra elements
+    cudaMemset(dev_block_red, 0, num_blocks_alloc*sizeof(float));
+
+    cudaMalloc((void **)&dev_gpu_red, sizeof(float));
+
     // cudamalloc dev_u    , sizeof(float) * np * np
     // cudamalloc dev_uhelp, sizeof(float) * np * np
-
+    float block_red[num_blocks];
     //
 
     // TODO: Copy initial values in u and uhelp from host to GPU
@@ -251,6 +258,7 @@ int main(int argc, char *argv[]) {
 
     iter = 0;
     float residual_cpu_time = 0, residual_gpu = 0;
+    uint32_t gpu_cpu_differ = 0;
     while (1) {
 
 	if (gpu_reduction) {
@@ -259,16 +267,29 @@ int main(int argc, char *argv[]) {
 	    gpu_Heat_diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diff, np);
 	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
-	    reduce<<<num_blocks, threads_per_block>>>(dev_diff, dev_block_red, np * np);
+	    reduce<<<num_blocks, threads_per_block>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
 	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
+	    float gpu_red = -1;
+	    //reduce<<<1, num_blocks/2>>>(dev_block_red, dev_gpu_red, num_blocks);
+	    //cudaDeviceSynchronize(); // Wait for compute device to finish.
+	    //cudaMemcpy(&gpu_red, dev_gpu_red, sizeof(float), cudaMemcpyDeviceToHost);
+
+	// old version
 	    cudaMemcpy(block_red, dev_block_red, num_blocks * sizeof(float),
 		       cudaMemcpyDeviceToHost);
 	    for (unsigned i = 0; i < num_blocks; i++) {
 		residual_gpu += block_red[i];
 	    }
 
-	    residual = residual_gpu;
+	    if (gpu_red != -1 && abs(residual_gpu - gpu_red) > 0.1) {
+		//printf("[%d blocks] gpu_red = %f, gpu_cpu_red = %f\n", num_blocks, gpu_red,
+		       //residual_gpu);
+		gpu_cpu_differ++;
+	    }
+	// old version
+
+	    residual = max(residual_gpu, gpu_red);
 	    // end v2
 	} else {
 	    // v1
@@ -319,6 +340,7 @@ int main(int argc, char *argv[]) {
     cudaFree(dev_u);
     cudaFree(dev_uhelp);
     cudaFree(dev_diff);
+    cudaFree(dev_gpu_red);
     //
 
     cudaEventRecord(stop, 0); // instrument code to measue end time
@@ -329,6 +351,7 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "Jacobi on GPU in ms. = %f (+ mem coyping)\n",
 	    elapsed_time_ms - residual_cpu_time * 1000);
     fprintf(stdout, "Residual computation in CPU: %f ms\n", residual_cpu_time * 1000);
+    fprintf(stdout, "GPU residual and GPU & CPU residual differed %d times\n", gpu_cpu_differ);
     fprintf(stdout, "(%3.3f GFlop => %6.2f MFlop/s)\n", flop / 1000000000.0,
 	    flop / elapsed_time_ms / 1000);
     fprintf(stdout, "Convergence to residual=%f: %d iterations\n", residual, iter);
