@@ -122,7 +122,7 @@ In this section we will explain the steps we followed to achieve the paralleliza
 
 \subsubsection{Jacobi}
 
-For the parallelization of Jacobi using MPI, we need to manage all the boundaries or halos from each of the nodes. First, we need to split the data between all the nodes we use. For this, we need to send the part of \texttt{param.u} and \texttt{param.uhelp} to the corresponding children node\footnote{Some not modified code has been deleted from the listings in order to has the report more clear}. Being $rowsWorkers = columns / numprocs + 2$.
+For the parallelization of Jacobi using MPI, we need to manage all the boundaries or halos from each of the nodes. First, we need to split the data between all the nodes we use. For this, we need to send the part of \texttt{param.u} and \texttt{param.uhelp} to the corresponding children node\footnote{Some not modified code has been deleted from the listings in order to have the report more clear}. Being $rowsWorkers = columns / numprocs + 2$.
 
 \begin{lstlisting}[language=c, caption={Sending/Receiving initial data to all nodes}]
 /* ROOT NODE (rank == 0) */
