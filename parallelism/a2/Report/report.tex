@@ -58,7 +58,9 @@ In this section we will explain the steps we followed to achieve the paralleliza
 
 \subsection{OpenMP}
 
-  For parallelize the code for Jacobi solver with OpenMP, we just needed to modify the \textit{solver-omp.c} file. The \textit{heat-omp.c} file did not need any modification. Jacobi solver does not have any data dependency, so the parallelization can be achieved with a \texttt{\#pragma} shown above.
+\subsubsection{Jacobi}
+
+  For parallelize the code for Jacobi solver with OpenMP, we just needed to modify the \textit{solver-omp.c} file. The \textit{heat-omp.c} file did not need any modification. Jacobi solver does not have any data dependency, so the parallelization can be achieved with a \texttt{\#pragma} shown bellow.
 
 \begin{lstlisting}[language=c, caption={OpenMP pragma for Jacobi parallelization}]
     #pragma omp parallel for collapse(2) private(diff) reduction(+:sum)
@@ -66,19 +68,143 @@ In this section we will explain the steps we followed to achieve the paralleliza
         for (int jj=0; jj<nby; jj++) 
             for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) 
                 for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
-	                  utmp[i*sizey+j]= 0.25 * (u[ i*sizey     + (j-1) ]+  // left
+	                utmp[i*sizey+j]= 0.25 * (u[ i*sizey     + (j-1) ]+  // left
 					          u[ i*sizey     + (j+1) ]+  // right
 				            u[ (i-1)*sizey + j     ]+  // top
 				            u[ (i+1)*sizey + j     ]); // bottom
-	            diff = utmp[i*sizey+j] - u[i*sizey + j];
-	            sum += diff * diff; 
-	        }
+	                diff = utmp[i*sizey+j] - u[i*sizey + j];
+	                sum += diff * diff; 
+	              }
 \end{lstlisting}
 
   For Jacobi, we do not need the first 2 outer \texttt{for} loops to be done in ``blocks", this will be useful for Gauss-Seidel. So we will fuse both fors with the \texttt{collapse(2)} clause. The next clause we use is \texttt{private(diff)} in which we specify that variable to be allocated for each thread to have their own value per thread. Last, we have the \texttt{reduction(+:sum)} specifying the way we want to reduce the values obtained by each thread. In this case, we want to sum (+) the values for each \texttt{sum} when we finish the parallel section in order to return the residual of the solver.
 
+\clearpage
+  \subsubsection{Gauss-Seidel}
+
+  The parallelization of Gauss-Seidel solver using OpenMP is quite different. In this case, we are using task in order to parallelize and create the dependencies of that solver. We introduce a new variable \texttt{block} used to indicate the dependencies between tasks. The code with OpenMP is in the next listing.
+
+\begin{lstlisting}[language=c, caption={OpenMP pragma for Gauss-Seidel parallelization}]
+    int block[nbx][nby];
+
+    #pragma omp parallel
+     {
+        for (int ii=0; ii<nbx; ii++) {
+            for (int jj=0; jj<nby; jj++) {
+                #pragma omp task depend(in: block[ii-1][jj], block[ii][jj-1]) depend(out: block[ii][jj]) private(diff, unew) 
+                {
+                    double omp_sum = 0.0;
+                    for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) {
+                        for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
+                        unew= 0.25 * (    u[ i*sizey	+ (j-1) ]+  // left
+                            u[ i*sizey	+ (j+1) ]+  // right
+                            u[ (i-1)*sizey	+ j     ]+  // top
+                            u[ (i+1)*sizey	+ j     ]); // bottom
+                        diff = unew - u[i*sizey+ j];
+                        omp_sum += diff * diff; 
+                        u[i*sizey+j]=unew;
+                        } 
+                    }
+                    #pragma omp atomic
+                    sum += omp_sum;
+                }
+            }
+        }
+    }\end{lstlisting}
+
+  In this case, not only the \texttt{\#pragmas} have been added. Some code needs to be changed in order to obtain the same behaviour as sequential code. First, as we have mentioned, we have introduced a new variable \texttt{block} to manage the dependencies on the \texttt{\#pragma omp task}. Each task will depend on the ``top" and ``left" blocks, indicated in the \texttt{depend(in:var\_list)} clause. The task ``returns" \texttt{block[ii][jj]} with the \texttt{depend(out:var\_list)} clause. Then, when the tasks of the left and the top from a block are finished, this task will be able to start. Creating the wavefront behaviour.
+
+  Also, we need to indicate that region as parallel with \texttt{\#pragma omp parallel} to create the threads to execute that region of code. Inside that region we have a race condition in the \texttt{sum} variable. In order to solve it, we create a new variable where we make the operations for each thread, and then with a \texttt{\#pragma omp atomic} we avoid that critical section, and we obtain the residual value correctly.
+
+\clearpage
 
 \subsection{MPI}
+
+\subsubsection{Jacobi}
+
+For the parallelization of Jacobi using MPI, we need to manage all the boundaries or halos from each of the nodes. First, we need to split the data between all the nodes we use. For this, we need to send the part of \texttt{param.u} and \texttt{param.uhelp} to the corresponding children node\footnote{Some not modified code has been deleted from the listings in order to has the report more clear}. Being $rowsWorkers = columns / numprocs + 2$.
+
+\begin{lstlisting}[language=c, caption={Sending/Receiving initial data to all nodes}]
+/* ROOT NODE (rank == 0) */
+
+for (int i=0; i<numprocs; i++) {
+     if (i>0) {
+             MPI_Send(&param.u[np*rowsWorkers*i], (np)*(rowsWorkers+2), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+             MPI_Send(&param.uhelp[np*rowsWorkers*i], (np)*(rowsWorkers+2), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+     }
+  }    
+
+/* (rank != 0) */
+
+MPI_Recv(&u[0], (rows+2)*(columns+2), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
+MPI_Recv(&uhelp[0], (rows+2)*(columns+2), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
+\end{lstlisting}
+
+The root node sends inside a for loop to all the nodes. The children nodes only need to receive once as it is shown above.
+
+
+Inside the iteration part, we need to send and receiving the halo from the contiguous nodes. This is different for 3 types of nodes:
+
+\begin{itemize}
+  \item Node 0: only sends to and receives from the next node.
+  \item Intermediate nodes: send to and receive from previous and next nodes.
+  \item Last node: only sends and receives from previous node.
+\end{itemize}
+
+\begin{lstlisting}[language=c, caption={Communications between nodes inside the iterations}]
+/* ROOT NODE (rank == 0) */
+
+MPI_Send(&param.u[np*rowsWorkers], np, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD);
+MPI_Recv(&param.u[np*(rowsWorkers+1)], np, MPI_DOUBLE, myid+1, 0,  MPI_COMM_WORLD, &status);
+
+residual = relax_jacobi(param.u, param.uhelp, rowsWorkers+2, np); 
+
+/* (rank != 0) */
+
+MPI_Send(&u[columns+2], columns + 2, MPI_DOUBLE, myid-1, 0, MPI_COMM_WORLD);
+
+MPI_Recv(&u[0], columns + 2, MPI_DOUBLE, myid-1, 0, MPI_COMM_WORLD, &status);
+                    
+if(myid != numprocs - 1){
+  MPI_Send(&u[rows*(columns+2)], columns+2, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD);
+  MPI_Recv(&u[(rows+1)*(columns + 2)], columns+2, MPI_DOUBLE, myid+1, 0, MPI_COMM_WORLD, &status);
+}
+
+residual = relax_jacobi(u, uhelp, rows+2, np);
+\end{lstlisting}
+
+After obtaining the residual of the heat equation, we need to sum the value from all the nodes to use it as break condition of the loop, so all the nodes could finish at the same time. This part is identical in all the nodes.
+
+\begin{lstlisting}[language=c, caption={Allreduce for residual value}]
+double res;
+MPI_Allreduce(&residual, &res, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+residual = res;
+\end{lstlisting}
+
+Once we have finished the iterative part, we need to send each part of the image computed in the children to the parent.
+
+\begin{lstlisting}[language=c, caption={Communication of the computed image to the parent}]
+/* ROOT NODE (rank == 0) */
+
+for(int i = 1; i < numprocs; i++){
+  MPI_Recv(&param.u[np*(rowsWorkers*i + 1)], np*(rowsWorkers), MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
+}
+/* (rank != 0) */
+
+MPI_Send(&u[np], np*rows, MPI_DOUBLE, 0, myid, MPI_COMM_WORLD);}
+
+residual = relax_jacobi(u, uhelp, rows+2, np);
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+\subsubsection{Gauss-Seidel}
 
 \subsection{CUDA}
 

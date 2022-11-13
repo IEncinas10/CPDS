@@ -98,7 +98,6 @@ double relax_gauss (double *u, unsigned sizex, unsigned sizey)
     int block[nbx][nby];
 
     #pragma omp parallel
-    #pragma omp single
     {
         for (int ii=0; ii<nbx; ii++) {
             for (int jj=0; jj<nby; jj++) {
