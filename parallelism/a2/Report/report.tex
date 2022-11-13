@@ -265,8 +265,132 @@ As we can see, we use ii to differentiate if the block is in the top side so the
 Blocks of the same node do not need to send or receive data between them as they are in shared memory. The blocks of the bottom side (\texttt{ii == nbx-1}) must send their last computed row to the next node in order to the upper block of the next node could start its execution. In this way we obtain the wavefront behaviour.
 
 
+\clearpage
 
 \subsection{CUDA}
+
+In this section we'll study the implementation of a Jacobi solver in CUDA. We'll start by implementing 
+the kernel of the solver on the GPU, then we'll integrate this kernel into our main function and 
+discuss how the memory must be managed. Lastly implement the reduction on the GPU too, as performing it
+on the CPU poses a huge bottleneck.
+
+\subsubsection{Kernels}
+Listing \ref{lst:cudajacobi} shows the Jacobi kernel implemented in CUDA. Here, we're relying on a square matrix of size NxN stored in row major order and in a 2D mapping of our blocks and threads. As we're required to avoid the border of our matrix the kernel itself becomes safe to use even when N is not divisible by the number of threads per block.
+\begin{lstlisting}[language=c, caption={Jacobi kernel}, label={lst:cudajacobi}]
+__global__ void gpu_Heat(float *h, float *g, int N) {
+
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < 1 || x > N - 2 || y < 1 || y > N - 2)
+        return;
+
+    g[N * x + y] = 0.25 * (h[N * x + y - 1] + h[N * x + y + 1] + 
+                           h[N * (x - 1) + y] + h[N * (x + 1) + y]);
+}
+\end{lstlisting}
+
+Listing \ref{lst:cudajacobidiff} shows a minor modification where we also produce the difference vector needed to perform the reduction. Instead of copying back both matrices we'll just store the difference result in GPU memory, that will later be reduced by another kernel. This translates into huge speedup and savings in memory bandwith.
+\begin{lstlisting}[language=c, caption={Jacobi with difference vector as output}, label={lst:cudajacobidiff}]
+__global__ void gpu_Heat_diff(float *h, float *g, float *diff, int N) {
+
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < 1 || x > N - 2 || y < 1 || y > N - 2)
+        return;
+
+    g[N * x + y] =
+        0.25 * (h[N * x + y - 1] + h[N * x + y + 1] + h[N * (x - 1) + y] + h[N * (x + 1) + y]);
+
+    diff[(N-2) * (x-1) + y-1] = (g[N * x + y] - h[N * x + y]) * (g[N * x + y] - h[N * x + y]);
+}
+
+\end{lstlisting}
+
+\subsubsection{Memory management}
+
+If we go to heat-CUDA.cu we'll notice some ``TODO''s related with the necessary memory management needed to interact with CUDA. As the GPUs and CPUs use different memories we not only have to allocate memory on both of them but also copy it back and forth when needed\footnote{CUDA Unified Memory is very ergonomic but sometimes noticeably slow. Using it also kind of defeats the purpouse when you're trying to learn how GPUs work}.
+
+
+Listing \ref{lst:cudamalloc} shows the memory allocation and initialization. Listing \ref{lst:cudamemcpy} the copying of
+retrieval of results to compute the residual and Listing \ref{lst:cudamemcpy} the collection of results and freeing 
+of resources.
+\begin{lstlisting}[language=c, caption={Memory allocation and initialization}, label={lst:cudamalloc}]
+    // TODO: Allocation on GPU for matrices u and uhelp
+    cudaMalloc((void **)&dev_u, np * np * sizeof(float));
+    cudaMalloc((void **)&dev_uhelp, np * np * sizeof(float));
+
+    // TODO: Copy initial values in u and uhelp from host to GPU
+    cudaMemcpy(dev_u, param.u, np * np * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_uhelp, param.uhelp, np * np * sizeof(float), cudaMemcpyHostToDevice);
+\end{lstlisting}
+
+\begin{lstlisting}[language=c, caption={Memory copying}, label={lst:cudamemcpy}]
+    // TODO: residual is computed on host, we need to get from GPU values computed in u and uhelp
+    cudaMemcpy(param.u,         dev_u, np * np * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(param.uhelp, dev_uhelp, np * np * sizeof(float), cudaMemcpyDeviceToHost);
+\end{lstlisting}
+
+\begin{lstlisting}[language=c, caption={Memory freeing and result retrieval}, label={lst:cudamemfree}]
+    // TODO: get result matrix from GPU
+    cudaMemcpy(param.u, dev_u, np * np * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // TODO: free memory used in GPU
+    cudaFree(dev_u);
+    cudaFree(dev_uhelp);
+\end{lstlisting}
+
+\subsubsection{Reduction}
+\begin{lstlisting}[language=c, caption={Reduction kernel}]
+__global__ void reduce(float *idata, float *odata, int N) {
+    __shared__ float sdata[MAX_THREADS_PER_BLOCK];
+    unsigned int s;
+
+    unsigned int tid = threadIdx.x;
+    unsigned int i = blockIdx.x * (blockDim.x * 2) + threadIdx.x;
+    unsigned int gridSize = blockDim.x * 2 * gridDim.x;
+    sdata[tid] = 0;
+    while (i < N) {
+        sdata[tid] += idata[i] + idata[i + blockDim.x];
+        i += gridSize;
+    }
+    __syncthreads();
+
+    for (s = blockDim.x / 2; s > 32; s >>= 1) {
+        if (tid < s)
+            sdata[tid] += sdata[tid + s];
+        __syncthreads();
+    }
+
+    if (tid < 32) {
+        volatile float *smem = sdata;
+
+        smem[tid] += smem[tid + 32];
+        smem[tid] += smem[tid + 16];
+        smem[tid] += smem[tid + 8];
+        smem[tid] += smem[tid + 4];
+        smem[tid] += smem[tid + 2];
+        smem[tid] += smem[tid + 1];
+    }
+
+    if (tid == 0)
+        odata[blockIdx.x] = sdata[0];
+}
+\end{lstlisting}
+
+The first step is to produce a partial reduction per-block level, we can achieve like this:
+\begin{lstlisting}[language=c, caption={Reduction}, label={lst:cudareduction_block}]
+    gpu_Heat_diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diff, np);
+    cudaDeviceSynchronize(); // Wait for compute device to finish.
+
+    reduce<<<num_blocks, threads_per_block>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
+    cudaDeviceSynchronize(); // Wait for compute device to finish.
+\end{lstlisting}
+
+And then we have two options, sum the partial reductions on the CPU or in the GPU. Our simple tests seem to indicate
+that due to how low the number of blocks are, summing them on the CPU is slightly faster. Also, the errors obtained on the GPU
+make us do more iterations.
 
 \section{Parallel solution}
 
