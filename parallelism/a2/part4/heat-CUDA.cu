@@ -270,8 +270,8 @@ int main(int argc, char *argv[]) {
 	    reduce<<<num_blocks, threads_per_block>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
 	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
-	    float gpu_red = -1;
-	    //reduce<<<1, num_blocks/2>>>(dev_block_red, dev_gpu_red, num_blocks);
+	    float gpu_red = 1000000;
+	    //reduce<<<1, num_blocks / 2 + num_blocks % 2>>>(dev_block_red, dev_gpu_red, num_blocks);
 	    //cudaDeviceSynchronize(); // Wait for compute device to finish.
 	    //cudaMemcpy(&gpu_red, dev_gpu_red, sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -289,7 +289,11 @@ int main(int argc, char *argv[]) {
 	    }
 	// old version
 
-	    residual = max(residual_gpu, gpu_red);
+	    if(residual_gpu != 0) {
+		residual = min(residual_gpu, gpu_red);
+	    } else {
+		residual = gpu_red;
+	    }
 	    // end v2
 	} else {
 	    // v1
