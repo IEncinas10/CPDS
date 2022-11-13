@@ -128,6 +128,7 @@ int main(int argc, char *argv[]) {
 
     // full size (param.resolution are only the inner points)
     np = param.resolution + 2;
+    bool gpu_reduction = false;
 
     int Grid_Dim, Block_Dim; // Grid and Block structure values
     if (strcmp(argv[2], "-t") == 0) {
@@ -138,8 +139,13 @@ int main(int argc, char *argv[]) {
 	    printf("Error -- too many threads in block, try again\n");
 	    return 1;
 	}
+
+	if (argc > 4 && strcmp(argv[4], "gpu") == 0) {
+	    printf("Reduction to be performed on the GPU\n");
+	    gpu_reduction = true;
+	}
     } else {
-	fprintf(stderr, "Usage: %s <input file> -t threads -b blocks\n", argv[0]);
+	fprintf(stderr, "Usage: %s <input file> -t threads -b blocks [gpu]\n", argv[0]);
 	fprintf(stderr, "       -t number of threads per block in each dimension (e.g. 16)\n");
 	return 0;
     }
@@ -246,44 +252,44 @@ int main(int argc, char *argv[]) {
     iter = 0;
     float residual_cpu_time = 0, residual_gpu = 0;
     while (1) {
-	residual_gpu = 0;
-	// v1
 
-	gpu_Heat<<<Grid, Block>>>(dev_u, dev_uhelp, np);
-	cudaDeviceSynchronize(); // Wait for compute device to finish.
+	if (gpu_reduction) {
+	    residual_gpu = 0;
+	    // v2
+	    gpu_Heat_diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diff, np);
+	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
-	// end v1
+	    reduce<<<num_blocks, threads_per_block>>>(dev_diff, dev_block_red, np * np);
+	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
-	// v2
+	    cudaMemcpy(block_red, dev_block_red, num_blocks * sizeof(float),
+		       cudaMemcpyDeviceToHost);
+	    for (unsigned i = 0; i < num_blocks; i++) {
+		residual_gpu += block_red[i];
+	    }
 
-	//gpu_Heat_diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diff, np);
-	//cudaDeviceSynchronize(); // Wait for compute device to finish.
+	    residual = residual_gpu;
+	    // end v2
+	} else {
+	    // v1
 
-	//reduce<<<num_blocks, threads_per_block>>>(dev_diff, dev_block_red, np * np);
-	//cudaDeviceSynchronize(); // Wait for compute device to finish.
+	    gpu_Heat<<<Grid, Block>>>(dev_u, dev_uhelp, np);
+	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
-	//cudaMemcpy(block_red, dev_block_red, num_blocks * sizeof(float), cudaMemcpyDeviceToHost);
-	//for(unsigned i = 0; i < num_blocks; i++) {
-	    //residual_gpu += block_red[i];
-	//}
+	    // end v1
 
-	// end v2
+	    // TODO: residual is computed on host, we need to get from GPU values computed in u and
+	    // uhelp
+	    //...
 
-	// TODO: residual is computed on host, we need to get from GPU values computed in u and
-	// uhelp
-	//...
+	    // cudaMemcpy dev_u     -> param.u    , devicetohost
+	    // cudaMemcpy dev_uhelp -> param.uhelp, devicetohost
+	    cudaMemcpy(param.u, dev_u, np * np * sizeof(float), cudaMemcpyDeviceToHost);
+	    cudaMemcpy(param.uhelp, dev_uhelp, np * np * sizeof(float), cudaMemcpyDeviceToHost);
 
-	// cudaMemcpy dev_u     -> param.u    , devicetohost
-	// cudaMemcpy dev_uhelp -> param.uhelp, devicetohost
-	cudaMemcpy(param.u, dev_u, np * np * sizeof(float), cudaMemcpyDeviceToHost);
-	cudaMemcpy(param.uhelp, dev_uhelp, np * np * sizeof(float), cudaMemcpyDeviceToHost);
+	    //
 
-	//
-
-	residual = cpu_residual(param.u, param.uhelp, np, np, &residual_cpu_time);
-
-	if(residual_gpu != 0 && abs(residual - residual_gpu) > 0.01) {
-	    printf("Residuals differ (gpu vs cpu) %f\n", abs(residual-residual_gpu));
+	    residual = cpu_residual(param.u, param.uhelp, np, np, &residual_cpu_time);
 	}
 
 	float *tmp = dev_u;
