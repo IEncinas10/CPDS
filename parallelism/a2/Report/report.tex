@@ -89,10 +89,15 @@ finish the parallel section in order to return the residual of the solver.
 \subsubsection{Gauss-Seidel}
 
 The parallelization of Gauss-Seidel solver using OpenMP is quite different. In this case, we are need tasks in order to parallelize while 
-respecting the dependencies of that solver. We introduce a new proxy variable \texttt{block}\footnote{Shown as \texttt{b} in the listing}, used to indicate the dependencies between tasks and mark whenever they're fulfilled. See Listing \ref{lst:seidelopenmp} for more details.
+respecting the dependencies of that solver. 
+
+\paragraph{Explicit tasks\\}
 
 
-{\huge{REVISAR}}
+We introduce a new proxy variable \texttt{block}\footnote{Shown as \texttt{b} in the listing}, used to indicate the dependencies between tasks and mark whenever they're fulfilled. See Listing \ref{lst:seidelopenmp} for more details.
+
+
+\todo[inline]{Revisar}
 
 
 
@@ -129,6 +134,10 @@ respecting the dependencies of that solver. We introduce a new proxy variable \t
   In this case, not only the \texttt{\#pragmas} have been added. Some code needs to be changed in order to obtain the same behaviour as sequential code. First, as we have mentioned, we have introduced a new variable \texttt{block} to manage the dependencies on the \texttt{\#pragma omp task}. Each task will depend on the ``top" and ``left" blocks, indicated in the \texttt{depend(in:var\_list)} clause. The task produces \texttt{block[ii][jj]} with the \texttt{depend(out:var\_list)} clause. Then, when the tasks of the left and the top from a block are finished, this task will be able to start, allowing us to exploit wavefront parallelism.
 
   Also, we need to indicate that region as parallel with \texttt{\#pragma omp parallel} to create the threads to execute that region of code. Inside that region we have a race condition in the \texttt{sum} variable. In order to solve it, we create a new variable where we make the operations for each thread, and then with a \texttt{\#pragma omp atomic} we avoid that critical section, and we obtain the residual value correctly.
+
+
+\paragraph{Do-across\\}
+\todo[inline]{Hacer}
 
 \clearpage
 
