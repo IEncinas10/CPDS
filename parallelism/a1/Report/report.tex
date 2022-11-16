@@ -121,10 +121,10 @@ MPI_Irecv( , , MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD,); /* S10 */
     \end{lstlisting}
 
     \begin{lstlisting}[language=c, caption={Correct S7, S8, S9, S10}]
-MPI_Isend(xlocal[maxn / size], maxn, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD, &r[nreq++]); /* S7 */
+MPI_Isend(xlocal[maxn/size], maxn, MPI_DOUBLE, rank + 1, 0, MPI_COMM_WORLD, &r[nreq++]); /* S7 */
 MPI_Irecv(xlocal, maxn, MPI_DOUBLE, rank - 1, 0, MPI_COMM_WORLD, &r[nreq++]); /* S8 */
 MPI_Isend(xlocal[1], maxn, MPI_DOUBLE, rank - 1, 1, MPI_COMM_WORLD, &r[nreq++]); /* S9 */
-MPI_Irecv(xlocal[maxn / size + 1], maxn, MPI_DOUBLE, rank + 1, 1, MPI_COMM_WORLD, &r[nreq++]); /* S10 */
+MPI_Irecv(xlocal[maxn/size+1], maxn, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD, &r[nreq++]); /* S10 */
     \end{lstlisting}
 
     \begin{lstlisting}[language=c, caption={Template S11}]
@@ -152,7 +152,7 @@ MPI_Sendrecv(xlocal[1], maxn, MPI_DOUBLE, prev_nbr, 1, xlocal[maxn / size + 1], 
 \textbf{Q3}: First of all, the space for the halo has to be allocated, and that's why we need two extra rows in our xlocal submatrix. Then, we have to avoid computing on the halo by restricting our nested for loops from computing new values for the outer columns. In order to avoid computing new values for the outer rows, we restrict the range tweaking the values i\_first, i\_{last} for our first and last MPI processes, making them ignore their first and last row respectively, because those are part of the halo. 
 
 \subsection{Jacobi}
-    In order to make our code clearer, this part of the assignment introduced MPI\_PROC\_NULL. This is useful because it lets us avoid filling our code with ifs considering corner cases. In this case, last process doesn't have a ``next neighbour'' so he can't send him anything. 
+    In order to make our code clearer, this part of the assignment introduced MPI\_PROC\_NULL. This is useful because it lets us avoid filling our code with ``\textit{ifs}'' considering corner cases. In this case, last process doesn't have a ``next neighbour'' so he can't send him anything. 
     \begin{lstlisting}[language=c, caption={Template S13}]
 next_nbr = ; /* S13 */
     \end{lstlisting}
@@ -177,11 +177,11 @@ MPI_Allreduce(&diffnorm, &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD); /*
 
 
 To complete our parallel Jacobi implementation the last step is to gather the disjoint computations performed by every working process. For that we use an MPI\_Gather, where the missing information was: the number of elements to send, the datatype and the root process.
-    \begin{lstlisting}[language=c, caption={Template }]
+    \begin{lstlisting}[language=c, caption={Template S15}]
 MPI_Gather( xlocal[1], , , x, maxn * (maxn/size), , , MPI_COMM_WORLD ); /* S15 */
     \end{lstlisting}
 
-    \begin{lstlisting}[language=c, caption={Correct }]
+    \begin{lstlisting}[language=c, caption={Correct S15}]
 MPI_Gather(xlocal[1], maxn * (maxn / size), MPI_DOUBLE, x, maxn * (maxn / size), MPI_DOUBLE, 0, MPI_COMM_WORLD); /* S15 */
     \end{lstlisting}
 
