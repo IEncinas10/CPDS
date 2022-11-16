@@ -17,7 +17,7 @@ double relax_jacobi (double *u, double *utmp, unsigned sizex, unsigned sizey)
     nby = NB;
     by = sizey/nby;
 
-    #pragma omp parallel for collapse(2) private(diff) reduction(+:sum)
+    #pragma omp parallel for private(diff) reduction(+:sum)
     for (int ii=0; ii<nbx; ii++)
         for (int jj=0; jj<nby; jj++) 
         
@@ -90,10 +90,10 @@ double relax_gauss (double *u, unsigned sizex, unsigned sizey)
     double unew, diff, sum = 0.0;
     int nbx, bx, nby, by;
 
-    nbx = NB;
-    bx = sizex/nbx;
-    nby = NB;
-    by = sizey/nby;
+    nbx = omp_get_max_threads();
+    bx = sizex/nbx + (sizex % nbx != 0);
+    nby = omp_get_max_threads();
+    by = sizey/nby + (sizey % nby != 0);
 
     int block[nbx][nby];
 
@@ -123,6 +123,47 @@ double relax_gauss (double *u, unsigned sizex, unsigned sizey)
             }
         }
     }
+    
+
+    return sum;
+}
+
+double relax_gauss_do_accross (double *u, unsigned sizex, unsigned sizey)
+{
+    double unew, diff, sum = 0.0;
+    int nbx, bx, nby, by;
+
+    nbx = omp_get_max_threads();
+    bx = sizex/nbx + (sizex % nbx != 0);
+    nby = omp_get_max_threads();
+    by = sizey/nby + (sizey % nby != 0);
+
+
+    #pragma omp for ordered(2)
+    
+        for (int ii=0; ii<nbx; ii++) {
+            for (int jj=0; jj<nby; jj++) {
+
+                    double omp_sum = 0.0;
+                    #pragma omp ordered depend(sink: ii-1, jj) depend(sink: ii, jj-1)
+                    for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) {
+                        for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
+                        unew= 0.25 * (    u[ i*sizey	+ (j-1) ]+  // left
+                            u[ i*sizey	+ (j+1) ]+  // right
+                            u[ (i-1)*sizey	+ j     ]+  // top
+                            u[ (i+1)*sizey	+ j     ]); // bottom
+                        diff = unew - u[i*sizey+ j];
+                        omp_sum += diff * diff; 
+                        u[i*sizey+j]=unew;
+                        } 
+                    }
+                    #pragma omp ordered depend(source)
+
+                    #pragma omp atomic
+                    sum += omp_sum;
+            }
+        }
+    
     
 
     return sum;
