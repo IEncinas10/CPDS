@@ -57,7 +57,7 @@ This is the report corresponding to the first assignment of the parallelism modu
 
 \section{A distributed data structure}
 
-   In this section we will briefly comment the code added to the template version in order to
+   In this section, we will briefly comment the code added to the template version in order to
    make the algorithm work. We will show the minimum number of lines of code possible to follow the reasoning.
 
 \subsection{Parallel data structure}
@@ -99,7 +99,7 @@ MPI_Recv(xlocal[maxn/size+1],maxn,MPI_DOUBLE,rank+1,1,MPI_COMM_WORLD,&status); /
 	\item \textbf{S5}: missing the nº of elements, datatype and communicator.
     \end{itemize}
 
-    Last, we have to figure how to sum the amount of errors detected by each MPI Process. For that, we use \textit{MPI\_Reduce}. Its missing the number of elements to be sent by each process, the datatype, the operation to be performed on the information, the root process and the communicator.
+    Last, we have to figure how to sum the amount of errors detected by each MPI Process. For that, we use \textit{MPI\_Reduce}. It is missing the number of elements to be sent by each process, the datatype, the operation to be performed on the information, the root process and the communicator.
 
     \begin{lstlisting}[language=c, caption={Template S6}]
 MPI_Reduce( &errcnt, &toterr,  ,  ,  ,  ,   ); /* S6 */
@@ -164,7 +164,7 @@ next_nbr = MPI_PROC_NULL; /* S13 */
 
 Next step is to compute the total difference norm from the current matrix to the previous one in order to know when to stop. 
 
-\textbf{Q1}: As every process has to know this, this reduction has to be shared with all of them. Thats why we need ``Allreduce''. 
+\textbf{Q1}: As every process has to know this, this reduction has to be shared with all of them. That's why we need ``Allreduce''. 
 
 \textbf{Q2}: The other alternative would be to use MPI\_Reduce and then send the result to every process with a broadcast (for example).
     \begin{lstlisting}[language=c, caption={Template S14}]
@@ -216,7 +216,7 @@ MPI_Iallreduce( , &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD, &r[ ]); /*
 MPI_Iallreduce(&diffnorm, &gdiffnorm, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD, &r[0]); /* S19 */
     \end{lstlisting}
 
-MPI\_Igather is missing the sending buffer and the request handle. As we need to retreive every processed element by every process, the starting point is xlocal[1], just after the ghost points comming from other processes, and we'll have to send maxn elements per row times the number of processed rows.
+MPI\_Igather is missing the sending buffer and the request handle. As we need to retrieve every processed element by every process, the starting point is xlocal[1], just after the ghost points coming from other processes, and we'll have to send maxn elements per row times the number of processed rows.
     \begin{lstlisting}[language=c, caption={Template 20}]
 MPI_Igather( , maxn * (maxn/size),MPI_DOUBLE, x, maxn * (maxn/size), MPI_DOUBLE, 0, MPI_COMM_WORLD, &r[ ]); /* S20 */
     \end{lstlisting}
@@ -241,7 +241,7 @@ return (rowsTotal / mpiSize) + (rowsTotal % mpiSize > mpiRank); /* Statement S21
 nrows = getRowCount(maxn, rank, size); /* Statement S22 */
     \end{lstlisting}
 
-In this simple case the first Gather is a bit unnecessary as we could compute everything from the root node, but it might not be the case in some other programs. MPI\_Gather gets from every working process the amount of rows they're gonna process, and stores it into an array. Then, we will use that array in order to do the gather with a variable ammount of elements per process.
+In this simple case the first Gather is a bit unnecessary as we could compute everything from the root node, but it might not be the case in some other programs. MPI\_Gather gets from every working process the amount of rows they're gonna process, and stores it into an array. Then, we will use that array in order to do the gather with a variable amount of elements per process.
 
 The missing information in the MPI\_Gather is: the number of elements to be sent and datatype.
 The missing information in the MPI\_Gatherv is: the number of elements to be sent and the array with the number of elements to be received from every process.
