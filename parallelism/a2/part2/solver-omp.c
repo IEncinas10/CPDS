@@ -98,10 +98,12 @@ double relax_gauss (double *u, unsigned sizex, unsigned sizey)
     int block[nbx][nby];
 
     #pragma omp parallel
+    #pragma omp single
     {
         for (int ii=0; ii<nbx; ii++) {
             for (int jj=0; jj<nby; jj++) {
-                #pragma omp task depend(in: block[ii-1][jj], block[ii][jj-1]) depend(out: block[ii][jj]) private(diff, unew) 
+
+                #pragma omp task depend(in: block[ii-1][jj], block[ii][jj-1]) depend(out: block[ii][jj]) private(diff, unew)
                 {
                     double omp_sum = 0.0;
                     for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) {
