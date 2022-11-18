@@ -58,7 +58,6 @@ In this section we will explain the steps we followed to achieve the paralleliza
 
 \subsection{OpenMP}
 
-OpenMP\footnote{https://www.openmp.org/} is an API that allows shared-memory multiprocessing programming in Fortran, C and C++. In this assignment we are using OpenMP in order to parallelize Jacobi and Gauss-Seidel solvers.
 
 \subsubsection{Jacobi}
 
@@ -181,7 +180,6 @@ Then, we need to specify the dependencies. We use \texttt{depend(sink:var\_list)
 
 \subsection{MPI}
 
-MPI (Message Passing Interface) is a library designed to allow the programmer to exploit the multiprocessing in a distributed memory architecture. We are going to use MPI to parallelize Jacobi and Gauss-Seidel.
 
 \subsubsection{Jacobi}
 
