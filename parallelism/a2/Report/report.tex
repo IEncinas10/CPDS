@@ -58,6 +58,8 @@ In this section we will explain the steps we followed to achieve the paralleliza
 
 \subsection{OpenMP}
 
+OpenMP\footnote{https://www.openmp.org/} is an API that allows shared-memory multiprocessing programming in Fortran, C and C++. In this assignment we are using OpenMP in order to parallelize Jacobi and Gauss-Seidel solvers.
+
 \subsubsection{Jacobi}
 
   Parallelizing the Jacobi solver with OpenMP just requires to modifying the \textit{solver-omp.c} file. The \textit{heat-omp.c} file does not need any modification. 
@@ -84,11 +86,13 @@ that each thread will have its own copy of the diff variable. Last, we have the 
 the way we want to reduce the values obtained by each thread. In this case, we want to sum (+) the values for each \texttt{sum} when we 
 finish the parallel section in order to return the residual of the solver.
 
+To improve the execution of the solver, we have modified the copy of the matrices after the computation of the solver to a swap of pointers, improving the performance of our code. See Section \ref{sec:results} for the results.
+
 \clearpage
 
 \subsubsection{Gauss-Seidel}
 
-The parallelization of Gauss-Seidel solver using OpenMP is quite different. In this case, we are need tasks in order to parallelize while 
+The parallelization of Gauss-Seidel solver using OpenMP is quite different. In this case, we need tasks to parallelize while 
 respecting the dependencies of that solver. 
 
 \paragraph{Explicit tasks\\}
@@ -129,13 +133,16 @@ int b[nbx][nby];
 
   In this case, not only the \texttt{\#pragmas} have been added. Some code needs to be changed in order to obtain the same behaviour as sequential code. First, as we have mentioned, we have introduced a new variable \texttt{block} to manage the dependencies on the \texttt{\#pragma omp task}. Each task will depend on the ``top" and ``left" blocks, indicated in the \texttt{depend(in:var\_list)} clause. The task produces \texttt{block[ii][jj]} with the \texttt{depend(out:var\_list)} clause. Then, when the tasks of the left and the top from a block are finished, this task will be able to start, allowing us to exploit wavefront parallelism.
 
-  Also, we need to indicate that region as parallel with \texttt{\#pragma omp parallel} to create the threads to execute that region of code. Inside that region we have a race condition in the \texttt{sum} variable. In order to solve it, we create a new variable where we make the operations for each thread, and then with a \texttt{\#pragma omp atomic} we avoid that critical section, and we obtain the residual value correctly.
+  Also, we need to indicate that region as parallel with \texttt{\#pragma omp parallel} to create the threads to execute that region of code. Also, we need to specify \texttt{\#pragma omp single} to indicate the region only is done by one thread, who will create the tasks for the rest of threads. 
+
+  Inside the task region, we have a race condition in the \texttt{sum} variable. In order to solve it, we create a new variable where we make the operations for each thread, and then with a \texttt{\#pragma omp atomic} we avoid that critical section, and we obtain the residual value correctly.
+
 
 \clearpage
 \paragraph{Do-across (Implicit tasks)\\}
 
 
-To implement Gauss with implicit task, we have used \texttt{\#pragma omp ordered}. In Listing \ref{lst:gauss-ordered}, we can see how the parallelization have been done.
+To implement Gauss with implicit tasks, we have used \texttt{\#pragma omp ordered}. In Listing \ref{lst:gauss-ordered}, we can see how the parallelization have been done.
 
 \begin{lstlisting}[language=c, caption={OpenMP pragma for Gauss-Seidel parallelization}, label={lst:gauss-ordered}]
     
@@ -167,12 +174,14 @@ To implement Gauss with implicit task, we have used \texttt{\#pragma omp ordered
 
 First, we have an \texttt{\#pragma omp for ordered(2)}, in which we specify the number of loops within the doacross nest. 
 
-Then, we need to specify the dependencies. We use \texttt{depend(sink:var\_list)} and \texttt{depend(source)} to indicate when a dependency starts and what iteration it depends on, and where the code has completed the computation from the current iteration. The way we avoid the race condition is equal as Gauss-Seidel implementation on OpenMP with explicit tasks. We use a local variable to add the diff over the iterations and once finished we do an atomic operation adding to \textit{sum}.
+Then, we need to specify the dependencies. We use \texttt{depend(sink:var\_list)} and \texttt{depend(source)} to indicate when a dependency starts and what iteration it depends on, and where the code has completed the computation from the current iteration. The way we avoid the race condition is equal to Gauss-Seidel implementation on OpenMP with explicit tasks. We use a local variable to add the diff over the iterations and once finished we do an atomic operation adding to \textit{sum}.
 
 
 \clearpage
 
 \subsection{MPI}
+
+MPI (Message Passing Interface) is a library designed to allow the programmer to exploit the multiprocessing in a distributed memory architecture. We are going to use MPI to parallelize Jacobi and Gauss-Seidel.
 
 \subsubsection{Jacobi}
 
@@ -196,9 +205,9 @@ The root node sends inside a for loop to all the nodes. The children nodes only 
 Inside the iteration part, we need to send and receiving the halo from the contiguous nodes. This is different for 3 types of nodes:
 
 \begin{itemize}
-  \item Node 0: only sends to and receives from the next node.
-  \item Intermediate nodes: send to and receive from previous and next nodes.
-  \item Last node: only sends and receives from previous node.
+  \item \textbf{Node 0}: only sends to and receives from the next node.
+  \item \textbf{Intermediate nodes}: send to and receive from previous and next nodes.
+  \item \textbf{Last node}: only sends and receives from previous node.
 \end{itemize}
 
 \begin{lstlisting}[language=c, caption={Communications between nodes inside the iterations}]
@@ -272,9 +281,9 @@ residual = relax_jacobi(u, uhelp, rows+2, np);
 For Gauss-Seidel we have also different types of nodes in order to send or receive between iterations. This communications only appears when the Gauss solver has finished with all the blocks of its node:
 
 \begin{itemize}
-  \item Node 0: only receives the lower boundary from next node.
-  \item Intermediate nodes: receives from next node the lower boundary and sends to the previous node the first computed row.
-  \item Last node: only sends to the previous node the first computed row.
+  \item \textbf{Node 0}: only receives the lower boundary from next node.
+  \item \textbf{Intermediate nodes}: receives from next node the lower boundary and sends to the previous node the first computed row.
+  \item \textbf{Last node}: only sends to the previous node the first computed row.
 \end{itemize}
 
 
@@ -433,6 +442,7 @@ that due to how low the number of blocks are, summing them on the CPU is slightl
 make us do more iterations.
 \clearpage
 \section{Parallel solution}
+\label{sec:results}
 
 In this section, we are going to show the results of each implementation after the execution on Boada. The results for the same size of image and same Programming Model are displayed together.
 
