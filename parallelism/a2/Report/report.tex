@@ -96,20 +96,16 @@ respecting the dependencies of that solver.
 
 We introduce a new proxy variable \texttt{block}\footnote{Shown as \texttt{b} in the listing}, used to indicate the dependencies between tasks and mark whenever they're fulfilled. See Listing \ref{lst:seidelopenmp} for more details.
 
-
-\todo[inline]{Revisar}
-
-
-
 \begin{lstlisting}[language=c, caption={OpenMP pragma for Gauss-Seidel parallelization}, label={lst:seidelopenmp}]
-    int b[nbx][nby];
+
+int b[nbx][nby];
 
 #pragma omp parallel
 #pragma omp single
 {
   for (int ii=0; ii<nbx; ii++) {
     for (int jj=0; jj<nby; jj++) {
-  #pragma omp task depend(in: b[ii-1][jj], b[ii][jj-1]) depend(out: b[ii][jj]) private(diff, unew) 
+    #pragma omp task depend(in: b[ii-1][jj], b[ii][jj-1]) depend(out: b[ii][jj]) private(diff, unew) 
       {
         double omp_sum = 0.0;
         for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) {
@@ -135,9 +131,44 @@ We introduce a new proxy variable \texttt{block}\footnote{Shown as \texttt{b} in
 
   Also, we need to indicate that region as parallel with \texttt{\#pragma omp parallel} to create the threads to execute that region of code. Inside that region we have a race condition in the \texttt{sum} variable. In order to solve it, we create a new variable where we make the operations for each thread, and then with a \texttt{\#pragma omp atomic} we avoid that critical section, and we obtain the residual value correctly.
 
+\clearpage
+\paragraph{Do-across (Implicit tasks)\\}
 
-\paragraph{Do-across\\}
-\todo[inline]{Hacer}
+
+To implement Gauss with implicit task, we have used \texttt{\#pragma omp ordered}. In Listing \ref{lst:gauss-ordered}, we can see how the parallelization have been done.
+
+\begin{lstlisting}[language=c, caption={OpenMP pragma for Gauss-Seidel parallelization}, label={lst:gauss-ordered}]
+    
+    #pragma omp for ordered(2)
+        for (int ii=0; ii<nbx; ii++) {
+            for (int jj=0; jj<nby; jj++) {
+
+                    double omp_sum = 0.0;
+                    #pragma omp ordered depend(sink: ii-1, jj) depend(sink: ii, jj-1)
+                    for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) {
+                        for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
+                        unew= 0.25 * (    u[ i*sizey	+ (j-1) ]+  // left
+                            u[ i*sizey	+ (j+1) ]+  // right
+                            u[ (i-1)*sizey	+ j     ]+  // top
+                            u[ (i+1)*sizey	+ j     ]); // bottom
+                        diff = unew - u[i*sizey+ j];
+                        omp_sum += diff * diff; 
+                        u[i*sizey+j]=unew;
+                        } 
+                    }
+                    #pragma omp ordered depend(source)
+
+                    #pragma omp atomic
+                    sum += omp_sum;
+            }
+        }
+    
+    \end{lstlisting}
+
+First, we have an \texttt{\#pragma omp for ordered(2)}, in which we specify the number of loops within the doacross nest. 
+
+Then, we need to specify the dependencies. We use \texttt{depend(sink:var\_list)} and \texttt{depend(source)} to indicate when a dependency starts and what iteration it depends on, and where the code has completed the computation from the current iteration. The way we avoid the race condition is equal as Gauss-Seidel implementation on OpenMP with explicit tasks. We use a local variable to add the diff over the iterations and once finished we do an atomic operation adding to \textit{sum}.
+
 
 \clearpage
 
@@ -403,7 +434,7 @@ make us do more iterations.
 \clearpage
 \section{Parallel solution}
 
-In this section we are going to show the results of each implementation after the execution on boada. The results for the same size of image and same Programming Model are displayed together.
+In this section, we are going to show the results of each implementation after the execution on Boada. The results for the same size of image and same Programming Model are displayed together.
 
 \subsection{OpenMP}
 
@@ -422,7 +453,7 @@ Threads & Jacobi & Gauss task & Gauss doacross  \\
 8       & 4,558  & 48,182     & 39,98           \\
 \bottomrule
 \end{tabular}
-\caption{Time to compute an image size 256x256}
+\caption{Time to compute an image of size 256x256}
 \end{table}
 
 \begin{table}[ht]
@@ -438,7 +469,7 @@ Threads & Jacobi & Gauss task & Gauss doacross  \\
 8       & 8,92   & 48,182     & 39,98           \\
 \bottomrule
 \end{tabular}
-\caption{Time to compute an image size 512x512}
+\caption{Time to compute an image of size 512x512}
 \end{table}
 
 \begin{table}[ht]
@@ -454,13 +485,13 @@ Threads & Jacobi & Gauss task & Gauss doacross  \\
 8       & 20,59  & 167        & 169             \\
 \bottomrule
 \end{tabular}
-\caption{Time to compute an image size 1024x1024}
+\caption{Time to compute an image of size 1024x1024}
 \end{table}
 
 \clearpage
 \subsection{MPI}
 
-MPI implementations of Jacobi and Gauss-Seidel has been tested in Boada, using 1, 2, 4 and 8 nodes for images of size 256, 512, 1024 respectively.
+MPI implementations of Jacobi and Gauss-Seidel has been tested in Boada, using 1, 2, 4 and 8 nodes for images of size 256, 512, 1024 respectively. \textit{Time Out} in the results means that the scheduler of Boada has killed the job for exceeding the limit of time execution.
 
 \begin{table}[ht]
 \centering
@@ -474,7 +505,7 @@ Nodes & Jacobi & Gauss   \\
 8       & 20,79  & 21,21   \\
 \bottomrule
 \end{tabular}
-\caption{Time to compute an image size 256x256}
+\caption{Time to compute an image of size 256x256}
 
 \end{table}
 
@@ -490,7 +521,7 @@ Nodes & Jacobi & Gauss   \\
 8       & 158,598 & 178,97  \\
 \bottomrule
 \end{tabular}
-\caption{Time to compute an image size 512x512}
+\caption{Time to compute an image of size 512x512}
 \end{table}
 
 \begin{table}[ht]
@@ -502,10 +533,10 @@ Nodes & Jacobi  & Gauss    \\
 1     & 87,77   & 167      \\
 2     & 180,705 & 181      \\
 4     & 365,47  & 370      \\
-  8     & Time Out\footnote{The Job submitted to Boada get killed because it lasted too much} & Time Out  \\
+  8     & Time Out & Time Out  \\
 \bottomrule
 \end{tabular}
-\caption{Time to compute an image size 1024x1024}
+\caption{Time to compute an image of size 1024x1024}
 \end{table}
 \clearpage
 \subsection{CUDA}
