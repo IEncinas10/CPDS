@@ -400,30 +400,37 @@ The first step is to produce a partial reduction per-block level, we can achieve
 And then we have two options, sum the partial reductions on the CPU or in the GPU. Our simple tests seem to indicate
 that due to how low the number of blocks are, summing them on the CPU is slightly faster. Also, the errors obtained on the GPU
 make us do more iterations.
-
+\clearpage
 \section{Parallel solution}
+
+In this section we are going to show the results of each implementation after the execution on boada. The results for the same size of image and same Programming Model are displayed together.
 
 \subsection{OpenMP}
 
-\begin{table}
+First, we have OpenMP implementations, we obtained results for the three different implementation we have. All of them have been tested with 256, 512 and 1024 square images. The tests have used 1, 2, 4 and 8 threads.
+
+\begin{table}[ht]
 \centering
-\begin{tabular}{llll} 
+
+\begin{tabular}{l|lll} 
 \toprule
-Threads & jacobi & gauss task & gauss doacross  \\ 
+Threads & Jacobi & Gauss task & Gauss doacross  \\ 
 \hline
-1       & 2,376  & 5,321      & 5,325           \\
-2       & 1,98   & 5,319      & 5,255           \\
-4       & 1,355  & 5,614      & 4,797           \\
-8       & 2,295  & 5,792      & 4,553           \\
+1       & 19,744 & 42,79      & 42,8            \\
+2       & 10,718 & 42,95      & 42,659          \\
+4       & 5,582  & 45,36      & 41,926          \\
+8       & 4,558  & 48,182     & 39,98           \\
 \bottomrule
 \end{tabular}
+\caption{Time to compute an image size 256x256}
 \end{table}
 
-\begin{table}
+\begin{table}[ht]
+
 \centering
 \begin{tabular}{l|lll} 
 \toprule
-Threads & jacobi & gauss task & gauss doacross  \\ 
+Threads & Jacobi & Gauss task & Gauss doacross  \\ 
 \hline
 1       & 17,41  & 42,79      & 42,8            \\
 2       & 11,45  & 42,95      & 42,659          \\
@@ -431,29 +438,35 @@ Threads & jacobi & gauss task & gauss doacross  \\
 8       & 8,92   & 48,182     & 39,98           \\
 \bottomrule
 \end{tabular}
+\caption{Time to compute an image size 512x512}
 \end{table}
 
-\begin{table}
+\begin{table}[ht]
+
 \centering
 \begin{tabular}{l|lll} 
 \toprule
-Threads & jacobi & gauss task & gauss doacross  \\ 
+Threads & Jacobi & Gauss task & Gauss doacross  \\ 
 \hline
 1       & 84,923 & 172        & 172,12          \\
-2       & 54,161 & 172        & 170             \\
-4       & 38,271 & 171        & 169             \\
-8       & 50,59  & 167        & 169             \\
+2       & 44,161 & 172        & 170             \\
+4       & 24,271 & 171        & 169             \\
+8       & 20,59  & 167        & 169             \\
 \bottomrule
 \end{tabular}
+\caption{Time to compute an image size 1024x1024}
 \end{table}
 
+\clearpage
 \subsection{MPI}
 
-\begin{table}
+MPI implementations of Jacobi and Gauss-Seidel has been tested in Boada, using 1, 2, 4 and 8 nodes for images of size 256, 512, 1024 respectively.
+
+\begin{table}[ht]
 \centering
 \begin{tabular}{l|ll} 
 \toprule
-Nodes & jacobi & gauss   \\ 
+Nodes & Jacobi & Gauss   \\ 
 \hline
 1       & 2,291  & 4,156   \\
 2       & 5,161  & 5,214   \\
@@ -461,13 +474,15 @@ Nodes & jacobi & gauss   \\
 8       & 20,79  & 21,21   \\
 \bottomrule
 \end{tabular}
+\caption{Time to compute an image size 256x256}
+
 \end{table}
 
-\begin{table}
+\begin{table}[ht]
 \centering
 \begin{tabular}{l|ll} 
 \toprule
-mpi 512 & jacobi  & gauss   \\ 
+  Nodes & Jacobi  & Gauss   \\ 
 \hline
 1       & 17,314  & 39,911  \\
 2       & 33,635  & 43,74   \\
@@ -475,22 +490,24 @@ mpi 512 & jacobi  & gauss   \\
 8       & 158,598 & 178,97  \\
 \bottomrule
 \end{tabular}
+\caption{Time to compute an image size 512x512}
 \end{table}
 
-\begin{table}
+\begin{table}[ht]
 \centering
 \begin{tabular}{l|ll} 
 \toprule
-Nodes & jacobi  & gauss    \\ 
+Nodes & Jacobi  & Gauss    \\ 
 \hline
 1     & 87,77   & 167      \\
 2     & 180,705 & 181      \\
 4     & 365,47  & 370      \\
-8     & Timeout & timeout  \\
+  8     & Time Out\footnote{The Job submitted to Boada get killed because it lasted too much} & Time Out  \\
 \bottomrule
 \end{tabular}
+\caption{Time to compute an image size 1024x1024}
 \end{table}
-
+\clearpage
 \subsection{CUDA}
 
 
