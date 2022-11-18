@@ -34,6 +34,8 @@ int main( int argc, char *argv[] )
     double runtime, flop;
     double residual=0.0;
 
+    printf("%d", omp_get_max_threads());
+
     // check arguments
     if( argc < 2 )
     {
@@ -94,9 +96,9 @@ int main( int argc, char *argv[] )
 	    case 0: // JACOBI
 	            residual = relax_jacobi(param.u, param.uhelp, np, np);
 		    // Copy uhelp into u
-		    for (int i=0; i<np; i++)
-    		        for (int j=0; j<np; j++)
-	    		    param.u[ i*np+j ] = param.uhelp[ i*np+j ];
+            double *aux_swap = param.u;
+            param.u = param.uhelp;
+            param.uhelp = aux_swap;
 		    break;
 	    case 1: // RED-BLACK
 		    residual = relax_redblack(param.u, np, np);
