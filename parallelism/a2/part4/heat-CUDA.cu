@@ -267,13 +267,14 @@ int main(int argc, char *argv[]) {
 	    gpu_Heat_diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diff, np);
 	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
-	    reduce<<<num_blocks, threads_per_block>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
+	    double wtf = 8.0;
+	    reduce<<<ceil(num_blocks/wtf), threads_per_block>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
 	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
 	    float gpu_red = 1000000;
-	    //Kernel06<<<1, num_blocks/2>>>(dev_block_red, dev_gpu_red);
-	    //cudaDeviceSynchronize(); // Wait for compute device to finish.
-	    //cudaMemcpy(&gpu_red, dev_gpu_red, sizeof(float), cudaMemcpyDeviceToHost);
+	    Kernel06<<<1, ceil(num_blocks/(2 * wtf))>>>(dev_block_red, dev_gpu_red);
+	    cudaDeviceSynchronize(); // Wait for compute device to finish.
+	    cudaMemcpy(&gpu_red, dev_gpu_red, sizeof(float), cudaMemcpyDeviceToHost);
 
 	// old version
 	    cudaMemcpy(block_red, dev_block_red, num_blocks * sizeof(float),
