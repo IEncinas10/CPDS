@@ -228,11 +228,10 @@ int main(int argc, char *argv[]) {
     cudaMalloc((void **)&dev_uhelp, np * np * sizeof(float));
     cudaMalloc((void **)&dev_diff, (np - 2) * (np - 2) * sizeof(float));
 
-    const unsigned threads_per_block = Block_Dim * Block_Dim;
-    const unsigned num_blocks = Grid_Dim * Grid_Dim;
-
-    int elems_per_thread = 2;
-    int num_blocks_reduce = (np - 2) * (np - 2) / (elems_per_thread * threads_per_block);
+    int elems_per_thread = 8;
+    int num_threads_reduce = 64;
+    int num_blocks_reduce = (np - 2) * (np - 2) / (elems_per_thread * num_threads_reduce);
+    fprintf(stdout, "\nGPU reduction (%d): %d elements per thread, %d blocks, %d threads\n\n", (np - 2) * (np - 2), elems_per_thread, num_blocks_reduce, num_threads_reduce);
     cudaMalloc((void **)&dev_block_red, num_blocks_reduce * sizeof(float));
     cudaMemset(dev_block_red, 0, num_blocks_reduce*sizeof(float));
 
@@ -256,7 +255,6 @@ int main(int argc, char *argv[]) {
 
     iter = 0;
     float residual_cpu_time = 0, gpu_red;
-    uint32_t gpu_cpu_differ = 0;
     while (1) {
 
 	if (gpu_reduction) {
@@ -264,7 +262,7 @@ int main(int argc, char *argv[]) {
 	    gpu_Heat_diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diff, np);
 	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
-	    reduce<<<num_blocks_reduce, threads_per_block>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
+	    reduce<<<num_blocks_reduce, num_threads_reduce>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
 
 	    Kernel06<<<1, num_blocks_reduce/2>>>(dev_block_red, dev_gpu_red);
 	    cudaMemcpy(&gpu_red, dev_gpu_red, sizeof(float), cudaMemcpyDeviceToHost);
@@ -332,7 +330,6 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "Jacobi on GPU in ms. = %f (+ mem coyping)\n",
 	    elapsed_time_ms - residual_cpu_time * 1000);
     fprintf(stdout, "Residual computation in CPU: %f ms\n", residual_cpu_time * 1000);
-    fprintf(stdout, "GPU residual and GPU & CPU residual differed %d times\n", gpu_cpu_differ);
     fprintf(stdout, "(%3.3f GFlop => %6.2f MFlop/s)\n", flop / 1000000000.0,
 	    flop / elapsed_time_ms / 1000);
     fprintf(stdout, "Convergence to residual=%f: %d iterations\n", residual, iter);
