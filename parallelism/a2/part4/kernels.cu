@@ -29,7 +29,7 @@ __global__ void gpu_Heat_diff(float *h, float *g, float *diff, int N) {
 }
 
 
-#define MAX_THREADS_PER_BLOCK 2048
+#define MAX_THREADS_PER_BLOCK 1024
 
 // idata: array of N elements.
 // odata: output array of "GridDim" elements, 1 per block

@@ -228,8 +228,8 @@ int main(int argc, char *argv[]) {
     cudaMalloc((void **)&dev_uhelp, np * np * sizeof(float));
     cudaMalloc((void **)&dev_diff, (np - 2) * (np - 2) * sizeof(float));
 
-    int elems_per_thread = 8;
-    int num_threads_reduce = 64;
+    int elems_per_thread = 4;
+    int num_threads_reduce = 128;
     int num_blocks_reduce = (np - 2) * (np - 2) / (elems_per_thread * num_threads_reduce);
     fprintf(stdout, "\nGPU reduction (%d): %d elements per thread, %d blocks, %d threads\n\n", (np - 2) * (np - 2), elems_per_thread, num_blocks_reduce, num_threads_reduce);
     cudaMalloc((void **)&dev_block_red, num_blocks_reduce * sizeof(float));
