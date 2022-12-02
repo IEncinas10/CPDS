@@ -260,16 +260,11 @@ int main(int argc, char *argv[]) {
 	if (gpu_reduction) {
 	    // v2
 	    gpu_Heat_diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diff, np);
-	    cudaDeviceSynchronize(); // Wait for compute device to finish.
-
 	    reduce<<<num_blocks_reduce, num_threads_reduce>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
-
 	    Kernel06<<<1, num_blocks_reduce/2>>>(dev_block_red, dev_gpu_red);
 	    cudaMemcpy(&gpu_red, dev_gpu_red, sizeof(float), cudaMemcpyDeviceToHost);
-
 	    residual = gpu_red;
 	    // end v2
-
 	} else {
 	    // v1
 

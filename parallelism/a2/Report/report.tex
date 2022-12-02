@@ -337,7 +337,7 @@ __global__ void gpu_Heat(float *h, float *g, int N) {
 }
 \end{lstlisting}
 
-Listing \ref{lst:cudajacobidiff} shows a minor modification where we also produce the difference vector needed to perform the reduction. Instead of copying back both matrices we'll just store the difference result in GPU memory, that will later be reduced by another kernel. This translates into huge speedup and savings in memory bandwith.
+Listing \ref{lst:cudajacobidiff} shows a minor modification where we also produce the difference vector needed to perform the reduction. Instead of copying back both matrices we'll just store the difference result in GPU memory which will later be reduced by another kernel. This translates into huge speedup and savings in memory bandwith that might be useful for other kernels running on the GPU.
 \begin{lstlisting}[language=c, caption={Jacobi with difference vector as output}, label={lst:cudajacobidiff}]
 __global__ void gpu_Heat_diff(float *h, float *g, float *diff, int N) {
 
@@ -354,6 +354,8 @@ __global__ void gpu_Heat_diff(float *h, float *g, float *diff, int N) {
 }
 
 \end{lstlisting}
+
+We have to notice that the difference vector only makes sense for interior points, given that the borders do not change. Then, our difference vector will have $N-2\times N-2$ elements.
 
 \subsubsection{Memory management}
 
@@ -379,6 +381,8 @@ of resources.
     cudaMemcpy(param.uhelp, dev_uhelp, np * np * sizeof(float), cudaMemcpyDeviceToHost);
 \end{lstlisting}
 
+\clearpage
+
 \begin{lstlisting}[language=c, caption={Memory freeing and result retrieval}, label={lst:cudamemfree}]
     // TODO: get result matrix from GPU
     cudaMemcpy(param.u, dev_u, np * np * sizeof(float), cudaMemcpyDeviceToHost);
@@ -389,11 +393,13 @@ of resources.
 \end{lstlisting}
 
 \subsubsection{Reduction}
+
+For the GPU reduction we can use the implementations given to us in the \textit{Hands on}. We will use one kernel to perform the first level reduction (Kernel07), where each thread processes an arbitrary number of elements and another (Kernel06) to produce the final result. 
+
 \begin{lstlisting}[language=c, caption={Reduction kernel}]
 __global__ void reduce(float *idata, float *odata, int N) {
     __shared__ float sdata[MAX_THREADS_PER_BLOCK];
     unsigned int s;
-
     unsigned int tid = threadIdx.x;
     unsigned int i = blockIdx.x * (blockDim.x * 2) + threadIdx.x;
     unsigned int gridSize = blockDim.x * 2 * gridDim.x;
@@ -403,7 +409,6 @@ __global__ void reduce(float *idata, float *odata, int N) {
         i += gridSize;
     }
     __syncthreads();
-
     for (s = blockDim.x / 2; s > 32; s >>= 1) {
         if (tid < s)
             sdata[tid] += sdata[tid + s];
@@ -412,7 +417,6 @@ __global__ void reduce(float *idata, float *odata, int N) {
 
     if (tid < 32) {
         volatile float *smem = sdata;
-
         smem[tid] += smem[tid + 32];
         smem[tid] += smem[tid + 16];
         smem[tid] += smem[tid + 8];
@@ -421,24 +425,76 @@ __global__ void reduce(float *idata, float *odata, int N) {
         smem[tid] += smem[tid + 1];
     }
 
-    if (tid == 0)
-        odata[blockIdx.x] = sdata[0];
+    if (tid == 0) odata[blockIdx.x] = sdata[0];
 }
+
+__global__ void Kernel06(float *g_idata, float *g_odata) {
+  __shared__ float sdata[MAX_THREADS_PER_BLOCK];
+  unsigned int s;
+  unsigned int tid = threadIdx.x;
+  unsigned int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
+  sdata[tid] = g_idata[i] + g_idata[i+blockDim.x];
+  __syncthreads();
+
+  for (s=blockDim.x/2; s>32; s>>=1) {
+    if (tid < s)
+      sdata[tid] += sdata[tid + s];
+    __syncthreads();
+  }
+
+ if (tid < 32) {
+   volatile float *smem = sdata;
+   smem[tid] += smem[tid + 32];
+   smem[tid] += smem[tid + 16];
+   smem[tid] += smem[tid + 8];
+   smem[tid] += smem[tid + 4];
+   smem[tid] += smem[tid + 2];
+   smem[tid] += smem[tid + 1];
+ }
+
+ if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+}
+
+
 \end{lstlisting}
 
-The first step is to produce a partial reduction per-block level, we can achieve like this:
-\begin{lstlisting}[language=c, caption={Reduction}, label={lst:cudareduction_block}]
-    gpu_Heat_diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diff, np);
-    cudaDeviceSynchronize(); // Wait for compute device to finish.
-
-    reduce<<<num_blocks, threads_per_block>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
-    cudaDeviceSynchronize(); // Wait for compute device to finish.
-\end{lstlisting}
-
-And then we have two options, sum the partial reductions on the CPU or in the GPU. Our simple tests seem to indicate
-that due to how low the number of blocks are, summing them on the CPU is slightly faster. Also, the errors obtained on the GPU
-make us do more iterations.
+Obviously, we have to allocate and free the memory for the difference vector, the partial reduction for each block and for the final reduction.
 \clearpage
+
+The GPU reduction has to be enabled by specifying ``gpu'' as the fifth command line parameter. When it is enabled the following lines will be invoked:
+
+\begin{lstlisting}[language=c, caption={Reduction}, label={lst:cudareduction_block}]
+    /* Arbitrary constants. They seem the fastest, at least for my 3060 */
+    int elems_per_thread = 4;
+    int num_threads_reduce = 128;
+    int num_blocks_reduce = (np - 2) * (np - 2) / (elems_per_thread * num_threads_reduce);
+
+    /* ... */
+
+    gpu_Heat_diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diff, np);
+    reduce<<<num_blocks_reduce, num_threads_reduce>>>(dev_diff, 
+	    dev_block_red, (np - 2) * (np - 2));
+    /* 
+     * As every thread brings into shared memory the sum of 2 
+     * elemets and we're reducing num_block_reduce elements, we
+     * have to invoke num_blocks_reduce/2 threads
+     */
+    Kernel06<<<1, num_blocks_reduce/2>>>(dev_block_red, dev_gpu_red);
+    cudaMemcpy(&gpu_red, dev_gpu_red, sizeof(float), cudaMemcpyDeviceToHost);
+\end{lstlisting}
+
+We have modified the code a little bit to measure the amount of time the CPU reduction takes. This allowed us to observe that great part of the overhead actually comes from copying memory from the GPU to the CPU in every iteration. It can be even bigger than the CPU reduction computation time. 
+
+Performing a good measurement of the speedup is a hard task in itself, as it is not the purpouse of this course we will omit it. Just as a reference, for the default case of execution
+\begin{lstlisting}[language=c]
+./heat-CUDA test.dat -t 16 gpu
+\end{lstlisting}
+
+The observed speedup is approximately 7. 
+
+
+\clearpage
+
 \section{Parallel solution}
 \label{sec:results}
 
@@ -546,8 +602,5 @@ Nodes & Jacobi  & Gauss    \\
 \end{tabular}
 \caption{Time to compute an image of size 1024x1024}
 \end{table}
-\clearpage
-\subsection{CUDA}
-
 
 \end{document}
