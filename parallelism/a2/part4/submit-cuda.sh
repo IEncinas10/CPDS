@@ -26,4 +26,4 @@ txb=8
 
 echo "Running ${KERNEL}"
 
-./${KERNEL} test.dat -t $txb
+./${KERNEL} test.dat -t $txb gpu

@@ -231,17 +231,15 @@ int main(int argc, char *argv[]) {
     const unsigned threads_per_block = Block_Dim * Block_Dim;
     const unsigned num_blocks = Grid_Dim * Grid_Dim;
 
-    const unsigned num_blocks_alloc = 4*num_blocks;
-
-    cudaMalloc((void **)&dev_block_red, num_blocks_alloc * sizeof(float));
-    // set to 0 for the extra elements
-    cudaMemset(dev_block_red, 0, num_blocks_alloc*sizeof(float));
+    int elems_per_thread = 2;
+    int num_blocks_reduce = (np - 2) * (np - 2) / (elems_per_thread * threads_per_block);
+    cudaMalloc((void **)&dev_block_red, num_blocks_reduce * sizeof(float));
+    cudaMemset(dev_block_red, 0, num_blocks_reduce*sizeof(float));
 
     cudaMalloc((void **)&dev_gpu_red, sizeof(float));
 
     // cudamalloc dev_u    , sizeof(float) * np * np
     // cudamalloc dev_uhelp, sizeof(float) * np * np
-    float block_red[num_blocks];
     //
 
     // TODO: Copy initial values in u and uhelp from host to GPU
@@ -257,45 +255,23 @@ int main(int argc, char *argv[]) {
     //
 
     iter = 0;
-    float residual_cpu_time = 0, residual_gpu = 0;
+    float residual_cpu_time = 0, gpu_red;
     uint32_t gpu_cpu_differ = 0;
     while (1) {
 
 	if (gpu_reduction) {
-	    residual_gpu = 0;
 	    // v2
 	    gpu_Heat_diff<<<Grid, Block>>>(dev_u, dev_uhelp, dev_diff, np);
 	    cudaDeviceSynchronize(); // Wait for compute device to finish.
 
-	    double wtf = 8.0;
-	    reduce<<<ceil(num_blocks/wtf), threads_per_block>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
-	    cudaDeviceSynchronize(); // Wait for compute device to finish.
+	    reduce<<<num_blocks_reduce, threads_per_block>>>(dev_diff, dev_block_red, (np - 2) * (np - 2));
 
-	    float gpu_red = 1000000;
-	    Kernel06<<<1, ceil(num_blocks/(2 * wtf))>>>(dev_block_red, dev_gpu_red);
-	    cudaDeviceSynchronize(); // Wait for compute device to finish.
+	    Kernel06<<<1, num_blocks_reduce/2>>>(dev_block_red, dev_gpu_red);
 	    cudaMemcpy(&gpu_red, dev_gpu_red, sizeof(float), cudaMemcpyDeviceToHost);
 
-	// old version
-	    cudaMemcpy(block_red, dev_block_red, num_blocks * sizeof(float),
-		       cudaMemcpyDeviceToHost);
-	    for (unsigned i = 0; i < num_blocks; i++) {
-		residual_gpu += block_red[i];
-	    }
-
-	    if (abs(residual_gpu - gpu_red) > 0.001) {
-		//printf("[%d blocks] gpu_red = %f, gpu_cpu_red = %f\n", num_blocks, gpu_red,
-		       //residual_gpu);
-		gpu_cpu_differ++;
-	    }
-	// old version
-
-	    if(residual_gpu != 0) {
-		residual = min(residual_gpu, gpu_red);
-	    } else {
-		residual = gpu_red;
-	    }
+	    residual = gpu_red;
 	    // end v2
+
 	} else {
 	    // v1
 
