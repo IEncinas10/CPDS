@@ -394,7 +394,11 @@ of resources.
 
 \subsubsection{Reduction}
 
-For the GPU reduction we can use the implementations given to us in the \textit{Hands on}. We will use one kernel to perform the first level reduction (Kernel07), where each thread processes an arbitrary number of elements and another (Kernel06) to produce the final result. 
+For the GPU reduction we can use the implementations given to us in the \textit{Hands on}. 
+
+For the first level reduction we will use the Kernel number 7, given that it supports that a thread previously reduces an arbitrary number of elements. This allows us to reduce huge vectors without having to necessarily spawn an enormous number of blocks.
+
+For the second level reduction we will use Kernel06, given that the number of blocks will be somewhat small. We could use the same kernel twice but we thought it would be interesting to mix them a little bit.
 
 \begin{lstlisting}[language=c, caption={Reduction kernel}]
 __global__ void reduce(float *idata, float *odata, int N) {
