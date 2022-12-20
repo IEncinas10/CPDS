@@ -34,8 +34,6 @@ int main( int argc, char *argv[] )
     double runtime, flop;
     double residual=0.0;
 
-    printf("%d", omp_get_max_threads());
-
     // check arguments
     if( argc < 2 )
     {

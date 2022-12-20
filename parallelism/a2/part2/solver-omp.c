@@ -14,15 +14,13 @@ double relax_jacobi (double *u, double *utmp, unsigned sizex, unsigned sizey)
     int nbx, bx, nby, by;
   
     nbx = NB;
-    bx = sizex/nbx;
+    //bx = sizex/nbx;
     nby = NB;
-    by = sizey/nby;
+    //by = sizey/nby;
 
     #pragma omp parallel for private(diff) reduction(+:sum)
-    for (int ii=0; ii<nbx; ii++)
-        for (int jj=0; jj<nby; jj++) 
-            for (int i=1+ii*bx; i<=min((ii+1)*bx, sizex-2); i++) 
-                for (int j=1+jj*by; j<=min((jj+1)*by, sizey-2); j++) {
+    for (unsigned int i=1; i<sizex-1; i++)
+        for (unsigned int j=1; j<sizey-1; j++){ 
 	            utmp[i*sizey+j]= 0.25 * (u[ i*sizey     + (j-1) ]+  // left
 					     u[ i*sizey     + (j+1) ]+  // right
 				             u[ (i-1)*sizey + j     ]+  // top
@@ -30,7 +28,6 @@ double relax_jacobi (double *u, double *utmp, unsigned sizex, unsigned sizey)
 	            diff = utmp[i*sizey+j] - u[i*sizey + j];
 	            sum += diff * diff; 
 	        }
-
     return sum;
 }
 
@@ -94,8 +91,8 @@ double relax_gauss (double *u, unsigned sizex, unsigned sizey)
     bx = sizex/nbx + (sizex % nbx != 0);
     nby = omp_get_max_threads();
     by = sizey/nby + (sizey % nby != 0);
-
-    int block[nbx][nby];
+	
+	int block[nbx][nby];
 
     #pragma omp parallel
     #pragma omp single
@@ -163,9 +160,6 @@ double relax_gauss_do_accross (double *u, unsigned sizex, unsigned sizey)
                     sum += omp_sum;
             }
         }
-    
-    
-
     return sum;
 }
 
