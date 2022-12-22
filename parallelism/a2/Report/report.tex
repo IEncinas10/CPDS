@@ -52,6 +52,16 @@
 
 \section{Introduction}
 
+Some changes have been added to the document after the feedback received with the first submission. 
+
+\begin{itemize}
+	\item Speedup evaluation and report: We have introduced tables with the speedup obtained for every Parallel Model and size of the problem. Also, a brief comment of the resulting values have been added to the section.
+	\item Modification of NB / for loops on Jacobi: We have modified the structure of the for loops. The 4 loops have been reduced to 2 for loops. This change deletes the blocks that uses NB so we don't need to assign any value depending the number of threads to it.
+	\item Gauss-Seidel missing communication: As commented in the mail, this communication was already introduced and no modification is needed.
+	\item For loops in solvers: The utilization of 4 loops is not needed in all the solvers. Only is needed for Gauss in OpenMP. Jacobi only needs 2 loops reducing overhead and facilitating the maintenance. 
+\end{itemize}
+
+
 \section{Parallelization}
 
 In this section we will explain the steps we followed to achieve the parallelization of both solvers, Jacobi and Gauss-Seidel. In the following sections, we are going to show how the parallel codes have been done in each Parallel Programming Model for each solver.
@@ -506,7 +516,7 @@ In this section, we are going to show the results of each implementation after t
 
 \subsection{OpenMP}
 
-First, we have OpenMP implementations, we obtained results for the three different implementation we have. All of them have been tested with 256, 512 and 1024 square images. The tests have used 1, 2, 4 and 8 threads.
+First, we have OpenMP implementations, we obtained results for the three different implementation we have. All of them have been tested with 256, 512 and 1024 square images. The tests have used 1, 2, 4 and 8 threads. We have also calculated the speedup for every size and solver. The results of Jacobi show an improvement over the secuential time, meanwhile the results of both Gauss solvers are almost the same in all executions.
 
 \begin{table}[ht]
 \centering
@@ -525,6 +535,20 @@ Threads & Jacobi & Gauss task & Gauss doacross  \\
 \end{table}
 
 \begin{table}[ht]
+\centering
+\begin{tabular}{l|lll} 
+\toprule
+Threads & Jacobi      & Gauss task   & Gauss doacross  \\ 
+\hline
+2       & 2,073298429 & 1,000376011  & 1,013320647     \\
+4       & 2,407294833 & 0,9478090488 & 1,110068793     \\
+8       & 2,66367713  & 0,9186809392 & 1,169558533     \\
+\bottomrule
+\end{tabular}
+\caption{Obtained speedup with OpenMP for image of size 256x256}
+\end{table}
+
+\begin{table}[ht]
 
 \centering
 \begin{tabular}{l|lll} 
@@ -539,6 +563,22 @@ Threads & Jacobi & Gauss task & Gauss doacross  \\
 \end{tabular}
 \caption{Time to compute an image of size 512x512}
 \end{table}
+
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{l|lll} 
+\toprule
+Threads & Jacobi      & Gauss task   & Gauss doacross  \\ 
+\hline
+2       & 1,842134727 & 0,9962747381 & 1,003305281     \\
+4       & 3,537083483 & 0,9433421517 & 1,020846253     \\
+8       & 4,331724441 & 0,8880909883 & 1,070535268     \\
+\bottomrule
+\end{tabular}
+\caption{Obtained speedup with OpenMP for image of size 512x512}
+\end{table}
+
 
 \begin{table}[ht]
 
@@ -556,10 +596,24 @@ Threads & Jacobi & Gauss task & Gauss doacross  \\
 \caption{Time to compute an image of size 1024x1024}
 \end{table}
 
+\begin{table}[ht]
+\centering
+\begin{tabular}{l|lll} 
+\toprule
+Threads & Jacobi      & Gauss task  & Gauss doacross  \\ 
+\hline
+2       & 1,923031634 & 1           & 1,012470588     \\
+4       & 3,498949363 & 1,005847953 & 1,018461538     \\
+8       & 4,124477902 & 1,02994012  & 1,018461538     \\
+\bottomrule
+\end{tabular}
+\caption{Obtained speedup with OpenMP for image of size 1024x1024}
+\end{table}
+
 \clearpage
 \subsection{MPI}
 
-MPI implementations of Jacobi and Gauss-Seidel has been tested in Boada, using 1, 2, 4 and 8 nodes for images of size 256, 512, 1024 respectively. \textit{Time Out} in the results means that the scheduler of Boada has killed the job for exceeding the limit of time execution.
+MPI implementations of Jacobi and Gauss-Seidel has been tested in Boada, using 1, 2, 4 and 8 nodes for images of size 256, 512, 1024 respectively. \textit{Time Out} in the results means that the scheduler of Boada has killed the job for exceeding the limit of time execution. As we can see with the speedups, we obtain values lower than 1. That means that we have a slowdown in the execution.
 
 \begin{table}[ht]
 \centering
@@ -574,7 +628,20 @@ Nodes & Jacobi & Gauss   \\
 \bottomrule
 \end{tabular}
 \caption{Time to compute an image of size 256x256}
+\end{table}
 
+\begin{table}[ht]
+\centering
+\begin{tabular}{l|ll} 
+\toprule
+Nodes & Jacobi       & Gauss         \\ 
+\hline
+2     & 0,4439062197 & 0,7970847718  \\
+4     & 0,2258032722 & 0,3955081842  \\
+8     & 0,1101972102 & 0,1959453088  \\
+\bottomrule
+\end{tabular}
+\caption{Obtained speedup with MPI for image of size 256x256}
 \end{table}
 
 \begin{table}[ht]
@@ -596,6 +663,20 @@ Nodes & Jacobi & Gauss   \\
 \centering
 \begin{tabular}{l|ll} 
 \toprule
+Nodes & Jacobi       & Gauss         \\ 
+\hline
+2     & 0,5147614092 & 0,9124599909  \\
+4     & 0,2462207938 & 0,4557611054  \\
+8     & 0,1091690942 & 0,2230038554  \\
+\bottomrule
+\end{tabular}
+\caption{Obtained speedup with MPI for image of size 512x512}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{l|ll} 
+\toprule
 Nodes & Jacobi  & Gauss    \\ 
 \hline
 1     & 87,77   & 167      \\
@@ -605,6 +686,20 @@ Nodes & Jacobi  & Gauss    \\
 \bottomrule
 \end{tabular}
 \caption{Time to compute an image of size 1024x1024}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{l|ll} 
+\toprule
+Nodes & Jacobi       & Gauss          \\ 
+\hline
+2     & 0,4857087518 & 0,02488622754  \\
+4     & 0,2401565108 & 0,02296132597  \\
+8     & ------       & ------         \\
+\bottomrule
+\end{tabular}
+\caption{Obtained speedup with MPI for image of size 1024x1024}
 \end{table}
 
 \end{document}
