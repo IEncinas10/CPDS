@@ -55,10 +55,10 @@
 Some changes have been added to the document after the feedback received with the first submission. 
 
 \begin{itemize}
-	\item Speedup evaluation and report: We have introduced tables with the speedup obtained for every Parallel Model and size of the problem. Also, a brief comment of the resulting values have been added to the section.
-	\item Modification of NB / for loops on Jacobi: We have modified the structure of the for loops. The 4 loops have been reduced to 2 for loops. This change deletes the blocks that uses NB so we don't need to assign any value depending the number of threads to it.
+	\item Speedup evaluation and report: We have introduced tables with the speedup obtained for every Parallel Model and size of the problem. Also, a brief comment of the resulting values has been added to the section.
+	\item Modification of NB / for loops on Jacobi: We have modified the structure of the for loops. The 4 loops have been reduced to 2 for loops. This change deletes the blocks that use NB, so we don't need to assign any value depending on the number of threads to it.
 	\item Gauss-Seidel missing communication: As commented in the mail, this communication was already introduced and no modification is needed.
-	\item For loops in solvers: The utilization of 4 loops is not needed in all the solvers. Only is needed for Gauss in OpenMP. Jacobi only needs 2 loops reducing overhead and facilitating the maintenance. 
+	\item For loops in solvers: The utilization of 4 loops is not needed in all the solvers. Only is needed for Gauss in OpenMP. Jacobi only needs 2 loops, reducing overhead and facilitating the maintenance. 
 \end{itemize}
 
 
